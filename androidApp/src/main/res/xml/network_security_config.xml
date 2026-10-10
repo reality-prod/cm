@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!--
+  The system trust store is NOT used. Only Let's Encrypt's roots are trust anchors, so a certificate issued by any
+  other CA (rogue, compromised or user-installed) can never validate. On top of that, the connection must contain a
+  CA whose public key (SPKI SHA-256) is pinned below. The leaf is never pinned: it is re-issued every cycle.
+
+  Source of the certificates: https://github.com/letsencrypt/website (static/certs), cross-checked for X1/X2 against
+  Mozilla's bundle. Verify against https://letsencrypt.org/certificates/ before releasing.
+  Root SHA-256 fingerprints:
+    ISRG Root X1  96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A:8F:FC:EE:05:C0:BD:DF:08:C6
+    ISRG Root X2  69:72:9B:8E:15:A8:6E:FC:17:7A:57:AF:B7:17:1D:FC:64:AD:D2:8C:2F:CA:8C:F1:50:7E:34:45:3C:CB:14:70
+    Root YE       E1:4F:FC:AD:5B:00:25:73:10:06:CA:A4:3A:12:1A:22:D8:E9:70:0F:4F:B9:CF:85:2F:02:A7:08:AA:5D:56:66
+    Root YR       E5:7B:7E:6F:15:0C:41:91:02:E8:D5:C0:55:72:9F:F9:67:B9:D1:A8:29:BF:00:CE:C8:9C:A6:04:EB:F4:A8:6F
+
+  Codeberg's chain: EE <- YE2 <- Root YE <- ISRG Root X2 <- ISRG Root X1.
+  Tradeoff: if Codeberg moves to a CA outside Let's Encrypt, the app stops connecting until you ship an update.
+  Regenerate/verify pins with tools/print-pins.sh. No pin-set expiration: expired pins would silently disable pinning.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="@raw/le_root_ye" />
+            <certificates src="@raw/le_root_yr" />
+            <certificates src="@raw/le_isrg_root_x1" />
+            <certificates src="@raw/le_isrg_root_x2" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">codeberg.org</domain>
+        <pin-set>
+            <!-- Roots -->
+            <pin digest="SHA-256">sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=</pin> <!-- Root YE (also its X2 cross-sign) -->
+            <pin digest="SHA-256">fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=</pin> <!-- Root YR -->
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin> <!-- ISRG Root X2 -->
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin> <!-- ISRG Root X1 -->
+            <!-- ECDSA intermediates (Codeberg currently uses YE2) -->
+            <pin digest="SHA-256">brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=</pin> <!-- YE1 -->
+            <pin digest="SHA-256">s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=</pin> <!-- YE2 -->
+            <pin digest="SHA-256">ppiiCCS+BOR6GjPE+kiHMb6SAR8jox6QDiyibJwqz84=</pin> <!-- YE3 -->
+            <!-- RSA intermediates (in case of a switch) -->
+            <pin digest="SHA-256">LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=</pin> <!-- YR1 -->
+            <pin digest="SHA-256">nWN7PSep5XDQdge5zK24CnCRXHr3KvzhKEGxsdqCX9E=</pin> <!-- YR2 -->
+            <pin digest="SHA-256">UaqofZhLVZrGnpKfiIoCLYMuCJ/026CkErUQG8pLx5k=</pin> <!-- YR3 -->
+        </pin-set>
+    </domain-config>
+</network-security-config>

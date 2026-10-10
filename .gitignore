@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.xcodeproj
+*.jks
+*.DS_Store
+*.apk
+*.ipa
+dist/
