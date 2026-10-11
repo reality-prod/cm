@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- Codeberg berg icon centered -->
+    <path
+        android:pathData="M50 10 C22.385 10 10 22.385 10 50 s12.385 40 40 40 40 -12.385 40 -40 S77.615 10 50 10 z M50 90 C27.925 90 10 62.075 10 50 s17.925 -40 40 -40 40 17.925 40 40 -17.925 40 -40 40 z"
+        android:fillColor="#2185D0"/>
+</vector>
