@@ -50,7 +50,7 @@ class AppState(
         elevateError = null
         scope.launch {
             try {
-                val s = api.signIn(u, password, otp?.takeIf { it.isNotBlank() }, WRITE_SCOPES, "CodeBerg mobile (write session)")
+                val s = api.signIn(u, password, otp?.takeIf { it.isNotBlank() }, WRITE_SCOPES, "Codeberg mobile (write session)")
                 writeToken = s.token
                 writeTokenId = s.tokenId
                 then()
@@ -129,7 +129,7 @@ class AppState(
     fun unlock() {
         if (authInFlight) return
         authInFlight = true
-        auth.authenticate("Unlock CodeBerg mobile") { ok ->
+        auth.authenticate("Unlock Codeberg mobile") { ok ->
             authInFlight = false
             if (ok) {
                 locked = false

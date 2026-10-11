@@ -61,13 +61,13 @@ fun TopBar(title: String, subtitle: String?, onBack: () -> Unit) {
     val s = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
-            Modifier.size(42.dp).clip(CircleShape).background(s.surfaceVariant).border(1.dp, s.outlineVariant, CircleShape).clickable(onClick = onBack),
+            Modifier.size(42.dp).clip(CircleShape).background(s.surface).border(1.dp, s.primary.copy(alpha = 0.3f), CircleShape).clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) { Text("\u2039", fontSize = 28.sp, color = s.onSurface) }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = s.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleLarge, color = s.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -75,7 +75,7 @@ fun TopBar(title: String, subtitle: String?, onBack: () -> Unit) {
 @Composable
 fun PillTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val s = MaterialTheme.colorScheme
-    Row(modifier.fillMaxWidth().clip(CircleShape).background(s.surfaceVariant).border(1.dp, s.outlineVariant, CircleShape).padding(4.dp)) {
+    Row(modifier.fillMaxWidth().clip(CircleShape).background(s.surface).border(1.dp, s.primary.copy(alpha = 0.3f), CircleShape).padding(4.dp)) {
         labels.forEachIndexed { i, label ->
             val on = i == selected
             Box(
@@ -92,7 +92,7 @@ fun PillTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modif
 @Composable
 fun Chip(text: String, tinted: Boolean = false) {
     val s = MaterialTheme.colorScheme
-    Box(Modifier.clip(CircleShape).background(if (tinted) s.primary.copy(alpha = 0.15f) else s.onSurface.copy(alpha = 0.07f)).padding(horizontal = 12.dp, vertical = 6.dp)) {
+    Box(Modifier.clip(CircleShape).background(if (tinted) s.primary.copy(alpha = 0.18f) else s.onSurface.copy(alpha = 0.07f)).padding(horizontal = 12.dp, vertical = 6.dp)) {
         Text(text, style = MaterialTheme.typography.labelSmall, color = if (tinted) s.primary else s.onSurfaceVariant)
     }
 }

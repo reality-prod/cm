@@ -21,39 +21,46 @@ val CodebergBlue = Color(0xFF2185D0)
 val BlueAccent = Color(0xFF5AA9E6)
 val BlueSoft = Color(0xFF9CCBF2)
 
-// Dark-first surfaces: near-black with a blue cast, white text, one bright accent.
+// Dark-first surfaces: near-black with a blue cast, white text, richer blue accents.
 private val DarkColors = darkColorScheme(
-    primary = BlueAccent,
-    onPrimary = Color(0xFF06121F),
-    primaryContainer = Color(0xFF123556),
+    primary = CodebergBlue,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF1A3A5F),
     onPrimaryContainer = Color(0xFFD6EAFB),
-    secondary = BlueSoft,
+    secondary = BlueAccent,
     onSecondary = Color(0xFF06121F),
+    tertiary = BlueSoft,
+    onTertiary = Color(0xFF06121F),
     background = Color(0xFF0B0F14),
     onBackground = Color(0xFFF4F7FA),
     surface = Color(0xFF0B0F14),
     onSurface = Color(0xFFF4F7FA),
     surfaceVariant = Color(0xFF131A23),
-    onSurfaceVariant = Color(0xFF9AA9BA),
-    outline = Color(0xFF2A3647),
+    onSurfaceVariant = Color(0xFFAAC7D8),
+    outline = CodebergBlue.copy(alpha = 0.3f),
     outlineVariant = Color(0xFF1C2532),
+    scrim = Color(0xFF000000),
 )
 
-// Light mode: white-forward, with a darker tone of the brand blue for AA-contrast text.
+// Light mode: white-forward, with richer blue accents and better contrast.
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF1A6DAF),
+    primary = CodebergBlue,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFDCEBF8),
     onPrimaryContainer = Color(0xFF0A2C49),
-    secondary = CodebergBlue,
+    secondary = Color(0xFF1A6DAF),
+    onSecondary = Color.White,
+    tertiary = BlueAccent,
+    onTertiary = Color.White,
     background = Color.White,
     onBackground = Color(0xFF0E1822),
     surface = Color.White,
     onSurface = Color(0xFF0E1822),
     surfaceVariant = Color(0xFFF1F6FA),
-    onSurfaceVariant = Color(0xFF52627A),
-    outline = Color(0xFFD3DEE9),
+    onSurfaceVariant = Color(0xFF2185D0),
+    outline = CodebergBlue.copy(alpha = 0.2f),
     outlineVariant = Color(0xFFE6EDF4),
+    scrim = Color(0xFF000000),
 )
 
 val AppShapes = Shapes(

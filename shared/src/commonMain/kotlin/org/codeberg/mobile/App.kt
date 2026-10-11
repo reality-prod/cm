@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -63,6 +64,8 @@ import org.codeberg.mobile.data.createSecureStore
 import org.codeberg.mobile.data.setSecureWindow
 import org.codeberg.mobile.data.Screen
 import org.codeberg.mobile.ui.Avatar
+import org.codeberg.mobile.ui.CodebergFullLogo
+import org.codeberg.mobile.ui.CodebergIcon
 import org.codeberg.mobile.ui.DetailScreen
 import org.codeberg.mobile.ui.LinkDialog
 import org.codeberg.mobile.data.Bridge
@@ -92,19 +95,19 @@ fun App() {
     }
 }
 
-/** The Codeberg logo, drawn from the official CC0 SVG path (trademark of Codeberg e.V.). */
+/**
+ * Codeberg logo for use in the app.
+ * Uses the full logo with icon and wordmark for larger spaces,
+ * and just the icon for smaller spaces.
+ */
 @Composable
 internal fun CodebergLogo(size: Int = 64) {
-    val path = remember {
-        PathParser().parsePathString(
-            "M11249.461-1883.696c-12.74 0-23.067 10.327-23.067 23.067 0 4.334 1.22 8.58 3.522 12.251l19.232-24.863" +
-                "c.138-.18.486-.18.624 0l19.233 24.864a23.07 23.07 0 0 0 3.523-12.252c0-12.74-10.327-23.067-23.067-23.067",
-        ).toPath()
-    }
-    Canvas(Modifier.size(size.dp)) {
-        scale(this.size.width / 4.233f, Offset.Zero) {
-            translate(-1030.156f, 172.97f) { scale(0.09176f, Offset.Zero) { drawPath(path, CodebergBlue) } }
-        }
+    // For sizes >= 200, use the full logo with text
+    // For smaller sizes, use just the icon
+    if (size >= 200) {
+        CodebergFullLogo(modifier = Modifier.size(size.dp))
+    } else {
+        CodebergIcon(size = size)
     }
 }
 
@@ -113,14 +116,16 @@ private fun SignInScreen(state: AppState) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
+    val s = MaterialTheme.colorScheme
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        CodebergLogo()
-        Spacer(Modifier.height(20.dp))
-        Text(if (state.needOtp) "Two-factor code" else "Sign in to Codeberg", style = MaterialTheme.typography.headlineMedium)
+        // Use the full logo with text for sign-in screen
+        CodebergFullLogo(modifier = Modifier.size(200.dp))
+        Spacer(Modifier.height(24.dp))
+        Text(if (state.needOtp) "Two-factor code" else "Sign in to Codeberg", style = MaterialTheme.typography.headlineMedium, color = s.onSurface)
         Spacer(Modifier.height(24.dp))
         if (state.needOtp) {
             OutlinedTextField(
@@ -132,6 +137,7 @@ private fun SignInScreen(state: AppState) {
             OutlinedTextField(
                 value = username, onValueChange = { username = it }, singleLine = true,
                 label = { Text("Username or email") }, shape = FieldShape, modifier = Modifier.fillMaxWidth(),
+                supportingText = { Text("e.g., yourusername or you@example.com", color = s.onSurfaceVariant) },
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
@@ -143,7 +149,7 @@ private fun SignInScreen(state: AppState) {
         }
         state.authError?.let {
             Spacer(Modifier.height(12.dp))
-            Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+            Text(it, color = s.error, textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(20.dp))
         Button(
@@ -156,13 +162,21 @@ private fun SignInScreen(state: AppState) {
             enabled = !state.busy && (if (state.needOtp) code.length == 6 else username.isNotBlank() && password.isNotEmpty()),
             shape = RoundedCornerShape(18.dp),
             modifier = Modifier.fillMaxWidth().height(54.dp),
-        ) { Text(if (state.needOtp) "Verify" else "Sign in", fontWeight = FontWeight.SemiBold) }
-        TextButton(onClick = { state.anonymous = true }) { Text("Browse without an account") }
+        ) { 
+            if (state.busy) {
+                CircularProgressIndicator(color = s.onPrimary, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(if (state.needOtp) "Verify" else "Sign in", fontWeight = FontWeight.SemiBold)
+        }
+        TextButton(onClick = { state.anonymous = true }) { 
+            Text("Browse without an account", color = s.primary)
+        }
         Spacer(Modifier.height(20.dp))
         Text(
             "Unofficial app. Not affiliated with or endorsed by Codeberg e.V. \u201CCodeberg\u201D and its logo are trademarks of Codeberg e.V.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = s.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
     }
@@ -202,19 +216,21 @@ private fun Shell(state: AppState) {
 @Composable
 private fun ExploreScreen(state: AppState) {
     var q by remember { mutableStateOf("") }
+    val s = MaterialTheme.colorScheme
     LaunchedEffect(Unit) { if (state.repos.isEmpty() && !state.loading) state.search("") }
     LazyColumn(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text("Explore", style = MaterialTheme.typography.headlineLarge)
-            Text("Discover open source on Codeberg", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Explore", style = MaterialTheme.typography.headlineLarge, color = s.onSurface)
+            Text("Discover open source on Codeberg", color = s.onSurfaceVariant)
             Spacer(Modifier.height(18.dp))
             // Searches only on the keyboard's Search action: no request per keystroke.
             OutlinedTextField(
                 value = q, onValueChange = { q = it }, singleLine = true, shape = FieldShape,
-                placeholder = { Text("Search repositories") }, modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search repositories", color = s.onSurfaceVariant.copy(alpha = 0.6f)) }, 
+                modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { state.search(q) }),
             )
@@ -238,23 +254,24 @@ private fun ExploreScreen(state: AppState) {
 
 @Composable
 internal fun RepoCard(repo: Repo, onClick: () -> Unit) {
+    val s = MaterialTheme.colorScheme
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = s.surfaceVariant,
+        border = BorderStroke(1.dp, s.outline.copy(alpha = 0.3f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Avatar(repo.fullName, 40.dp)
                 Column {
-                    Text(repo.fullName.substringBefore('/'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(repo.fullName.substringAfter('/'), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(repo.fullName.substringBefore('/'), style = MaterialTheme.typography.bodySmall, color = s.onSurfaceVariant)
+                    Text(repo.fullName.substringAfter('/'), style = MaterialTheme.typography.titleMedium, color = s.primary)
                 }
             }
             if (repo.description.isNotBlank()) {
-                Text(repo.description, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(repo.description, style = MaterialTheme.typography.bodyMedium, color = s.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             val meta = buildString {
                 append("\u2605 ${repo.stars}")
@@ -262,30 +279,35 @@ internal fun RepoCard(repo: Repo, onClick: () -> Unit) {
                 append("  \u00B7  updated ${repo.updatedAt.substringBefore('T')}")
                 if (repo.isPrivate) append("  \u00B7  private")
             }
-            Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(meta, style = MaterialTheme.typography.bodySmall, color = s.onSurfaceVariant)
         }
     }
 }
 
 @Composable
 private fun ProfileScreen(state: AppState) {
+    val s = MaterialTheme.colorScheme
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("You", style = MaterialTheme.typography.headlineLarge)
-        OutlinedButton(onClick = { state.push(Screen.Settings) }, shape = RoundedCornerShape(16.dp)) { Text("Settings") }
+        Text("You", style = MaterialTheme.typography.headlineLarge, color = s.onSurface)
+        OutlinedButton(onClick = { state.push(Screen.Settings) }, shape = RoundedCornerShape(16.dp)) { 
+            Text("Settings", color = s.primary) 
+        }
         val user = state.user
         if (user != null) {
-            Text("@$user", style = MaterialTheme.typography.titleLarge)
-            Text("Signed in to codeberg.org", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = { state.signOut() }, shape = RoundedCornerShape(16.dp)) { Text("Sign out") }
+            Text("@$user", style = MaterialTheme.typography.titleLarge, color = s.onSurface)
+            Text("Signed in to codeberg.org", color = s.onSurfaceVariant)
+            OutlinedButton(onClick = { state.signOut() }, shape = RoundedCornerShape(16.dp)) { 
+                Text("Sign out", color = s.error) 
+            }
         } else {
-            Text("Browsing anonymously", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Browsing anonymously", color = s.onSurfaceVariant)
             Button(onClick = { state.anonymous = false }, shape = RoundedCornerShape(16.dp)) { Text("Sign in") }
         }
         Spacer(Modifier.height(8.dp))
         Text(
             "Talks only to codeberg.org. No analytics, trackers or third-party servers.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = s.onSurfaceVariant,
         )
     }
 }
@@ -294,8 +316,9 @@ private fun ProfileScreen(state: AppState) {
 private fun FloatingNav(selected: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     Surface(
-        modifier = modifier, shape = RoundedCornerShape(32.dp), color = scheme.surfaceVariant,
-        border = BorderStroke(1.dp, scheme.outline), shadowElevation = 12.dp,
+        modifier = modifier, shape = RoundedCornerShape(32.dp), color = scheme.surface,
+        border = BorderStroke(1.dp, scheme.primary.copy(alpha = 0.3f)), 
+        shadowElevation = 12.dp,
     ) {
         Row(Modifier.padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Tab.entries.forEach { t ->

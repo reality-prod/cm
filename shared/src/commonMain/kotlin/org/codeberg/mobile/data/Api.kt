@@ -103,7 +103,7 @@ class ForgejoApi(
     private val http = HttpClient {
         followRedirects = false // The API needs none; never let a redirect carry credentials elsewhere.
         expectSuccess = false
-        install(UserAgent) { agent = "CodeBergMobile/0.2.0 (unofficial client)" } // Honest, never "Mozilla".
+        install(UserAgent) { agent = "CodebergMobile/0.2.0 (unofficial client)" } // Honest, never "Mozilla".}
         install(HttpRequestRetry) {
             maxRetries = 2
             retryIf { request, response ->
@@ -236,7 +236,7 @@ class ForgejoApi(
         password: String,
         otp: String?,
         scopes: List<String> = READ_SCOPES,
-        tokenName: String = "CodeBerg mobile",
+        tokenName: String = "Codeberg mobile",
     ): Session {
         if (user.isBlank() || user.length > 254 || ':' in user || user.any { it.isISOControl() }) {
             throw ApiException(ApiError.Auth)
