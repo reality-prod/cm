@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <group
+        android:translateX="50"
+        android:translateY="50">
+        
+        <!-- Berg icon path - this is the mountain/berg shape from Codeberg logo -->
+        <!-- Scaled and centered for the viewport -->
+        <path
+            android:pathData="M0 -50 C -12.74 0 -23.067 -10.327 -23.067 -23.067 0 -4.334 -1.22 -8.58 -3.522 -12.251 L -19.232 24.863 C -0.138 0.18 -0.486 0.18 -0.624 0 L -19.233 -24.864 C -2.302 3.672 -3.523 7.919 -3.523 12.252 0 12.74 10.327 23.067 23.067 23.067"
+            android:fillColor="#2185D0"
+            android:scaleX="0.4"
+            android:scaleY="0.4"/>
+    </group>
+</vector>

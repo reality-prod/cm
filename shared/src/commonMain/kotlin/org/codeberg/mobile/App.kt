@@ -123,7 +123,7 @@ private fun SignInScreen(state: AppState) {
         verticalArrangement = Arrangement.Center,
     ) {
         // Use the full logo with text for sign-in screen
-        CodebergFullLogo(modifier = Modifier.size(200.dp))
+        CodebergIcon(modifier = Modifier.size(120.dp))
         Spacer(Modifier.height(24.dp))
         Text(if (state.needOtp) "Two-factor code" else "Sign in to Codeberg", style = MaterialTheme.typography.headlineMedium, color = s.onSurface)
         Spacer(Modifier.height(24.dp))

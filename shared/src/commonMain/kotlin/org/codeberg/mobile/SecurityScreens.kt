@@ -40,7 +40,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.codeberg.mobile.data.AppState
-import org.codeberg.mobile.ui.CodebergFullLogo
+import org.codeberg.mobile.ui.CodebergIcon
 import org.codeberg.mobile.ui.Chip
 import org.codeberg.mobile.ui.TopBar
 
@@ -54,7 +54,7 @@ internal fun LockScreen(state: AppState) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        CodebergFullLogo(modifier = Modifier.size(200.dp))
+        CodebergIcon(modifier = Modifier.size(120.dp))
         Spacer(Modifier.height(24.dp))
         Text("Codeberg mobile is locked", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = s.onSurface)
         Spacer(Modifier.height(8.dp))

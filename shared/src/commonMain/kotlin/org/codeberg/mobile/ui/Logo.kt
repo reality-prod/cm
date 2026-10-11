@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -14,68 +15,41 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 
 /**
- * Full Codeberg logo with icon and wordmark, drawn from the official CC0 SVG.
- * This renders the complete horizontal blue logo with both the berg icon and "Codeberg" text.
- */
-@Composable
-fun CodebergFullLogo(modifier: Modifier = Modifier) {
-    // The full logo consists of multiple SVG paths
-    val skyPath = remember { 
-        PathParser().parsePathString(
-            "M11249.461-1883.696c-12.74 0-23.067 10.327-23.067 23.067 0 4.334 1.22 8.58 3.522 12.251l19.232-24.864c.138-.18.486-.18.624 0l19.233 24.864c2.302-3.672 3.523-7.919 3.523-12.252 0-12.74-10.327-23.067-23.067-23.067"
-        ).toPath()
-    }
-    
-    val bergPath = remember {
-        PathParser().parsePathString(
-            "M42519.285-7078.789a.76087.568 0 0 0-.738.674l33.586 125.889a87.182 87.182 0 0 0 39.381-33.764l-71.565-92.52a.76087.568 0 0 0-.664-.279"
-        ).toPath()
-    }
-    
-    val textPath = remember {
-        PathParser().parsePathString(
-            "M11270.993-1886.229c-1.451 0-2.584.487-3.399 1.462-.826.974-1.239 2.261-1.239 3.86 0 1.228.302 2.298.906 3.209.835 1.271 2.107 1.906 3.811 1.906 1.186 0 2.218-.439 3.098-1.318l-.81-1.255c-.784.498-1.461.747-2.033.747-.87 0-1.564-.334-2.08-1.001-.489-.636-.733-1.398-.733-2.288 0-1.006.207-1.821.62-2.446.476-.731 1.149-1.096 2.017-1.096.626 0 1.319.275 2.079.826l.812-1.318c-1.017-.858-2.033-1.287-3.049-1.287zm28.787 0-2.001 1.128v9.117h1.621l.159-.715c.487.604 1.174.905 2.065.905.899 0 1.655-.27 2.27-0.81.783-.71 1.176-1.753 1.176-3.129 0-1.069-.266-1.927-.795-2.573-.605-.731-1.439-1.096-2.509-1.096-.382 0-.732.073-1.048.222-.403.191-.716.456-.938.794zm-10.77.032-2.004 1.112v2.303c-.498-.402-1.111-.604-1.841-.604-.847 0-1.573.281-2.175.842-.805.752-1.21 1.821-1.21 3.208 0 .985.251 1.79.748 2.415.593.752 1.456 1.128 2.589 1.128.403 0 .794-.09 1.175-.27.382-.18.657-.408.828-.683l.285.762h1.605zm-11.269 2.812c-1.04 0-1.881.328-2.527.985-.71.72-1.065 1.663-1.065 2.827 0 1.027.318 1.896.953 2.605.709.784 1.591 1.176 2.639 1.176.901 0 1.688-.307 2.365-.921.816-.731 1.224-1.684 1.224-2.86 0-1.006-.275-1.858-.826-2.557-.657-.837-1.578-1.255-2.763-1.255zm15.749 0c-1.029 0-1.874.339-2.544 1.017-.741.741-1.112 1.678-1.112 2.811 0 1.154.33 2.06.986 2.716.689.699 1.647 1.048 2.876 1.048 1.142 0 2.096-.339 2.858-1.017l-.509-1.064c-.751.424-1.47.636-2.158.636-.488 0-.911-.159-1.272-.477-.351-.328-.547-.736-.586-1.223h4.953v-.731c0-1.049-.274-1.901-.825-2.558-.634-.773-1.525-1.16-2.667-1.16zm15.886 0c-1.026 0-1.873.339-2.541 1.017-.743.741-1.112 1.678-1.112 2.811 0 1.154.328 2.06.985 2.716.687.699 1.646 1.048 2.876 1.048 1.142 0 2.094-.339 2.858-1.017l-.507-1.064c-.753.424-1.474.636-2.161.636-.487 0-.911-.159-1.271-.477-.35-.328-.547-.736-.588-1.223h4.956v-.731c0-1.049-.275-1.901-.826-2.558-.636-.773-1.524-1.16-2.669-1.16zm7.753 0c-.316 0-.63.085-.938.254-.296.159-.498.349-.603.572l-.191-.635h-1.699v7.211h1.97v-5.178c.168-.371.434-.556.794-.556.391 0 .763.201 1.11.603l1.685-.921c-.466-.900-1.175-1.35-2.128-1.35zm5.171 0c-.839 0-1.564.281-2.178.842-.805.752-1.206 1.821-1.206 3.208 0 .974.247 1.78.745 2.415.583.752 1.405 1.128 2.463 1.128.869 0 1.54-.355 2.018-1.064 0 1.589-.573 2.383-1.716 2.383-.806 0-1.531-.212-2.177-.636l-.507 1.017c.834.763 1.826 1.144 2.968 1.144 1.102 0 1.949-.323 2.544-.969.601-.656.902-1.594.902-2.812v-6.464h-1.54l-.158.778c0-.106-.153-.265-.461-.477-.466-.328-1.031-.493-1.697-.493zm-28.827 1.414c.953 0 1.458.519 1.51 1.557h-3.068c.116-1.038.636-1.557 1.558-1.557zm15.888 0c.952 0 1.455.519 1.509 1.557h-3.066c.116-1.038.636-1.557 1.557-1.557zm-31.62 0.016c1.027 0 1.541.794 1.541 2.383 0 1.525-.514 2.287-.514 2.287-.514-.514-.514-2.287 0-2.383 0-1.588.514-2.383 1.541-2.383zm7.852 0c.35 0 .652.117.907.35.263.222.433.508.506.857v2.017c-.06.392-.242.741-.57 1.048-.328.297-.684.445-1.064.445-1.028 0-1.542-.789-1.542-2.367 0-.72.159-1.292.477-1.715.318-.424.747-.636 1.286-.636zm37.133 0c.34 0 .646.122.923.366.287.233.45.513.493.841v1.827c0 .455-.16.852-.478 1.191-.318.328-.693.493-1.127.493-1.038 0-1.558-.789-1.558-2.367 0-.72.159-1.292.477-1.715.317-.424.742-.636 1.27-.636z"
-        ).toPath()
-    }
-    
-    Canvas(modifier) {
-        // Calculate scale to fit width
-        val viewBoxWidth = 224.89583f
-        val viewBoxHeight = 66.145835f
-        val scaleFactor = this.size.width / viewBoxWidth
-        
-        scale(scaleFactor, Offset.Zero) {
-            translate(-18.462652f, -54.165061f) {
-                // Draw sky/background circle
-                drawPath(skyPath, CodebergBlue)
-                // Draw berg icon
-                drawPath(bergPath, CodebergBlue)
-                // Draw text
-                drawPath(textPath, CodebergBlue)
-            }
-        }
-    }
-}
-
-/**
- * Codeberg logo icon only (the berg/mountain shape).
- * This is used for smaller spaces like the app icon or action bar.
+ * Codeberg logo icon - the berg/mountain shape from the official SVG.
+ * Uses the exact path from the provided SVG (trademark of Codeberg e.V.).
  */
 @Composable
 fun CodebergIcon(modifier: Modifier = Modifier, size: Int = 64) {
     val path = remember {
+        // Berg icon path from official Codeberg SVG with fill="#2185d0"
         PathParser().parsePathString(
             "M11249.461-1883.696c-12.74 0-23.067 10.327-23.067 23.067 0 4.334 1.22 8.58 3.522 12.251l19.232-24.863" +
                 "c.138-.18.486-.18.624 0l19.233 24.864c2.302-3.672 3.523-7.919 3.523-12.252 0-12.74-10.327-23.067-23.067-23.067"
         ).toPath()
     }
     Canvas(modifier.size(size.dp)) {
-        scale(this.size.width / 4.233f, Offset.Zero) {
-            translate(-1030.156f, 172.97f) { 
-                scale(0.09176f, Offset.Zero) { 
-                    drawPath(path, CodebergBlue) 
-                } 
-            }
+        // Simplified scaling: just scale the path to fit the canvas
+        // The path coordinates are relative, so we can scale uniformly
+        val scaleFactor = this.size.width / 23.067f / 2f // 23.067 is the width of the path
+        scale(scaleFactor, Offset(this.size.width / 2f, this.size.height / 2f)) {
+            drawPath(path, Color(0xFF2185D0))
         }
     }
+}
+
+/**
+ * Codeberg logo - uses the icon.
+ */
+@Composable
+fun CodebergLogo(modifier: Modifier = Modifier, size: Int = 64) {
+    CodebergIcon(modifier = modifier, size = size)
+}
+
+/**
+ * Full Codeberg logo - larger version for sign-in screens.
+ * Renders the berg icon in Codeberg Blue (#2185D0).
+ */
+@Composable
+fun CodebergFullLogo(modifier: Modifier = Modifier) {
+    CodebergIcon(modifier = modifier.size(120.dp))
 }
