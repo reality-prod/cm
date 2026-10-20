@@ -148,7 +148,23 @@ private fun AnnotatedString.Builder.inline(node: ASTNode, md: Md) {
                 val u = c.getTextInNode(md.src).toString()
                 link(u, u, md)
             }
-            MarkdownElementTypes.IMAGE -> append("[image]") // Never fetched.
+            MarkdownElementTypes.IMAGE -> {
+                val altText = c.children.firstOrNull { it.type == MarkdownElementTypes.LINK_TEXT }
+                    ?.getTextInNode(md.src)?.toString()?.removePrefix("![")?.removeSuffix("]").orEmpty()
+                    .ifEmpty { "image" }
+                val dest = c.children.firstOrNull { it.type == MarkdownElementTypes.LINK_DESTINATION }
+                    ?.getTextInNode(md.src)?.toString().orEmpty()
+                val safeDest = safeHttpUrl(dest)
+                val label = "🖼️ [$altText]"
+                if (safeDest != null) {
+                    val style = TextLinkStyles(SpanStyle(color = md.linkColor, textDecoration = TextDecoration.Underline))
+                    withLink(LinkAnnotation.Clickable(tag = safeDest, styles = style) { md.onLink(safeDest) }) {
+                        append(label)
+                    }
+                } else {
+                    append(label)
+                }
+            }
             MarkdownTokenTypes.EMPH, MarkdownTokenTypes.BACKTICK, GFMTokenTypes.TILDE,
             MarkdownTokenTypes.HTML_TAG, MarkdownElementTypes.HTML_BLOCK -> Unit
             MarkdownTokenTypes.EOL -> append(' ')

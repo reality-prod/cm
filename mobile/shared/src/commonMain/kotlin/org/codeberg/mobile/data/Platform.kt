@@ -95,10 +95,12 @@ fun parseDeepLink(raw: String): Screen? {
     val rest = when {
         u.startsWith("https://", ignoreCase = true) -> u.drop(8)
         u.startsWith("codebergmobile://", ignoreCase = true) -> u.drop(17)
+        u.startsWith("codeberg://", ignoreCase = true) -> u.drop(11)
         else -> return null
     }
     val parts = rest.substringBefore('#').substringBefore('?').split('/').filter { it.isNotEmpty() }
-    if (parts.firstOrNull()?.lowercase() != "codeberg.org") return null
+    val host = parts.firstOrNull()?.lowercase()
+    if (host != "codeberg.org" && host != "localhost" && host != "127.0.0.1") return null
     val path = parts.drop(1)
     return try {
         when {
@@ -106,6 +108,18 @@ fun parseDeepLink(raw: String): Screen? {
                 val full = path.joinToString("/")
                 requireSafeRepo(full)
                 Screen.RepoHome(full)
+            }
+            path.size >= 3 && path[2] == "blob" -> {
+                val full = path[0] + "/" + path[1]
+                requireSafeRepo(full)
+                val filePath = path.drop(3).joinToString("/")
+                Screen.FileView(full, filePath)
+            }
+            path.size >= 3 && path[2] == "tree" -> {
+                val full = path[0] + "/" + path[1]
+                requireSafeRepo(full)
+                val dirPath = path.drop(3).joinToString("/")
+                Screen.DirView(full, dirPath)
             }
             path.size == 4 && path[2] in setOf("issues", "pulls") && path[3].length in 1..9 && path[3].all { it.isDigit() } -> {
                 val full = path[0] + "/" + path[1]

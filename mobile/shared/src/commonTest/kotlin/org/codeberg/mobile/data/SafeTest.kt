@@ -27,6 +27,8 @@ class SafeTest {
     @Test fun acceptsPlainWebLinks() {
         assertNotNull(safeHttpUrl("https://codeberg.org/user/repo"))
         assertNotNull(safeHttpUrl("  http://example.org/a?b=c#d  "))
+        assertNotNull(safeHttpUrl("codebergmobile://codeberg.org/user/repo"))
+        assertNotNull(safeHttpUrl("codeberg://localhost/user/repo"))
     }
 
     @Test fun rejectsDangerousOrSpoofedLinks() {
@@ -48,6 +50,9 @@ class SafeTest {
     @Test fun deepLinksParseOnlyKnownShapes() {
         assertEquals(Screen.RepoHome("owner/repo"), parseDeepLink("https://codeberg.org/owner/repo"))
         assertEquals(Screen.RepoHome("owner/repo"), parseDeepLink("codebergmobile://codeberg.org/owner/repo?x=1#y"))
+        assertEquals(Screen.RepoHome("owner/repo"), parseDeepLink("codeberg://localhost/owner/repo"))
+        assertEquals(Screen.FileView("owner/repo", "src/Main.kt"), parseDeepLink("codeberg://localhost/owner/repo/blob/src/Main.kt"))
+        assertEquals(Screen.DirView("owner/repo", "src"), parseDeepLink("codebergmobile://localhost/owner/repo/tree/src"))
         assertEquals(Screen.IssueView("owner/repo", 42), parseDeepLink("https://codeberg.org/owner/repo/issues/42"))
         assertEquals(Screen.IssueView("owner/repo", 7), parseDeepLink("https://codeberg.org/owner/repo/pulls/7/"))
     }

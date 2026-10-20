@@ -38,6 +38,8 @@ fun safeHttpUrl(raw: String): String? {
     val rest = when {
         u.startsWith("https://", ignoreCase = true) -> u.drop(8)
         u.startsWith("http://", ignoreCase = true) -> u.drop(7)
+        u.startsWith("codebergmobile://", ignoreCase = true) -> u.drop(17)
+        u.startsWith("codeberg://", ignoreCase = true) -> u.drop(11)
         else -> return null
     }
     val authority = rest.takeWhile { it != '/' && it != '?' && it != '#' }

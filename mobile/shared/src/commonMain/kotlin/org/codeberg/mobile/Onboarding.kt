@@ -153,7 +153,7 @@ fun OnboardingFlow(state: AppState) {
             state = state,
             progress = progress, total = activeSteps.size,
             onBack = { back() },
-            primary = if (state.needOtp) "Verify 2FA code" else "Sign in to Codeberg",
+            primary = if (state.needOtp) "Verify 2FA code" else "Sign in",
             primaryEnabled = !state.busy && if (state.needOtp) code.length == 6 else username.isNotBlank() && password.isNotEmpty(),
             onPrimary = {
                 if (state.needOtp) {
@@ -163,7 +163,7 @@ fun OnboardingFlow(state: AppState) {
                     password = ""
                 }
             },
-            secondary = "Continue without an account",
+            secondary = "Continue as guest",
             onSecondary = { guest = true; step = Step.Interests },
         ) {
             SignInContent(
@@ -182,12 +182,12 @@ fun OnboardingFlow(state: AppState) {
                 PhoneProfileScreen(
                     displayName = name,
                     handle = state.user ?: "codeberg",
-                    bio = state.profile?.description?.ifBlank { null } ?: "Building free and open source software on Codeberg.",
+                    bio = state.profile?.description?.ifBlank { null } ?: "Your super cool profile description here...",
                     topics = topics,
                 )
             }
             Spacer(Modifier.height(20.dp))
-            Headline("Hi, $name.", "Nice to meet you. Let's make Codeberg fit the way you work.", centred = true)
+            Headline("Welcome $name to Codeberg!", "Enjoy a first-class mobile experience tailored to using your forge on the go.", centred = true)
         }
 
         Step.Interests -> OnboardingFrame(
@@ -200,7 +200,7 @@ fun OnboardingFlow(state: AppState) {
                 PhoneExploreScreen(selectedTopics = topics, interactive = false)
             }
             Spacer(Modifier.height(16.dp))
-            Headline("What are you into?", "Watch the phone update live as you pick topics. We'll tune Explore to your choices.")
+            Headline("What do you want to see?", "We're curious about what languages and projects you want to see. Don't worry, this isn't going to Codeberg e.V.")
             Spacer(Modifier.height(16.dp))
             TopicGrid(selected = topics, onToggle = { topic ->
                 topics = if (topic in topics) topics - topic else topics + topic
@@ -219,7 +219,7 @@ fun OnboardingFlow(state: AppState) {
             Spacer(Modifier.height(18.dp))
             Headline(
                 "Stay in the loop",
-                "Notifications from Codeberg land in one Inbox, unread first. Tap inside the phone above to try triaging.",
+                "Notifications from Codeberg; tap inside the phone above to try triaging.",
                 centred = true,
             )
         }
@@ -236,7 +236,7 @@ fun OnboardingFlow(state: AppState) {
                 PhoneSecurityScreen(locked = state.lockEnabled, timeoutSec = state.lockTimeoutSec)
             }
             Spacer(Modifier.height(18.dp))
-            Headline("Lock it down", "Open Codeberg with your fingerprint, face or device PIN.")
+            Headline("Secure it", "Codeberg Mobile supports biometric authentication and PIN sign in. For those of us that are top-secret.")
             Spacer(Modifier.height(16.dp))
             Surface(
                 shape = RoundedCornerShape(BrandRadius.lg),
@@ -321,7 +321,7 @@ fun SignInPage(state: AppState) {
         state = state,
         progress = null, total = 0,
         onBack = null,
-        primary = if (state.needOtp) "Verify 2FA code" else "Sign in to Codeberg",
+        primary = if (state.needOtp) "Verify 2FA code" else "Sign in",
         primaryEnabled = !state.busy && if (state.needOtp) code.length == 6 else username.isNotBlank() && password.isNotEmpty(),
         onPrimary = {
             if (state.needOtp) {
