@@ -10,12 +10,20 @@ desktop/core/target/
 # Rust
 target/
 
-# Secrets must never be committed
+# Secrets and local signing credentials
 *.p12
-*.mobileprovision
+*.pfx
+*.jks
+*.keystore
+keystore.properties
+signing.properties
 local.properties
 .env
+.env.*
+!.env.example
 
+# Local signing and credential files
+**/gradle/release.keystore
 # ==============================================================================
 # Custom Folder & File Restrictions
 # ==============================================================================

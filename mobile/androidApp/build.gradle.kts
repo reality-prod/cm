@@ -18,6 +18,26 @@ android {
         versionCode = 1
         versionName = "0.2.0"
     }
+    signingConfigs {
+        create("release") {
+            val defaultStore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storeFile = if (defaultStore.exists()) defaultStore else rootProject.file("gradle/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
