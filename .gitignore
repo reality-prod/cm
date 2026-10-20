@@ -1,0 +1,31 @@
+.gradle/
+local.properties
+.idea/
+*.xcodeproj
+*.jks
+
+# Desktop build output
+desktop/core/target/
+
+# Rust
+target/
+
+# Secrets must never be committed
+*.p12
+*.mobileprovision
+local.properties
+.env
+
+# ==============================================================================
+# Custom Folder & File Restrictions
+# ==============================================================================
+
+# Ignore any uppercase Design folder anywhere in the project
+[Dd]esign/
+
+# Ignore all build folders and files everywhere
+[Bb]uild/
+
+# Un-ignore build.gradle.kts specifically, wherever it is located
+!**/build.gradle.kts
+

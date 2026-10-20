@@ -1,0 +1,15 @@
+{
+  "_comment": "SPKI SHA-256 pins for codeberg.org's Let's Encrypt chain. Edit here, then run: make sync. Roots carry a 'root' file name that is checked against the PEM in certs/roots/ with openssl. Leaves are never pinned.",
+  "pins": [
+    { "name": "Root YE", "pin": "sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=", "root": "le_root_ye.pem" },
+    { "name": "Root YR", "pin": "fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=", "root": "le_root_yr.pem" },
+    { "name": "ISRG Root X2", "pin": "diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=", "root": "le_isrg_root_x2.pem" },
+    { "name": "ISRG Root X1", "pin": "C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=", "root": "le_isrg_root_x1.pem" },
+    { "name": "YE1", "pin": "brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=" },
+    { "name": "YE2", "pin": "s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=" },
+    { "name": "YE3", "pin": "ppiiCCS+BOR6GjPE+kiHMb6SAR8jox6QDiyibJwqz84=" },
+    { "name": "YR1", "pin": "LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=" },
+    { "name": "YR2", "pin": "nWN7PSep5XDQdge5zK24CnCRXHr3KvzhKEGxsdqCX9E=" },
+    { "name": "YR3", "pin": "UaqofZhLVZrGnpKfiIoCLYMuCJ/026CkErUQG8pLx5k=" }
+  ]
+}

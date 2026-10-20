@@ -1,0 +1,36 @@
+{
+  "name": "Codeberg",
+  "identifier": "org.codeberg.yourusername.codebergmobile.source",
+  "subtitle": "Unofficial Codeberg client",
+  "description": "Source for Codeberg, an unofficial, open source Codeberg client. Not affiliated with Codeberg e.V.",
+  "website": "REPLACE_WITH_YOUR_SITE",
+  "apps": [
+    {
+      "name": "Codeberg",
+      "bundleIdentifier": "org.codeberg.yourusername.codebergmobile",
+      "developerName": "REPLACE_WITH_YOUR_NAME",
+      "subtitle": "Browse Codeberg natively",
+      "localizedDescription": "Browse repositories, read code and issues, and triage notifications on Codeberg. Open source (AGPL-3.0-or-later), no trackers. Unofficial.",
+      "iconURL": "REPLACE_WITH_ICON_URL",
+      "tintColor": "2185D0",
+      "versions": [
+        {
+          "version": "0.2.0",
+          "buildVersion": "1",
+          "date": "REPLACE_WITH_RELEASE_DATE_YYYY-MM-DD",
+          "localizedDescription": "Initial beta.",
+          "downloadURL": "REPLACE_WITH_URL_OF_CodebergMobile.ipa",
+          "size": 0,
+          "minOSVersion": "16.0"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSFaceIDUsageDescription": "Unlock Codeberg with Face ID."
+        }
+      }
+    }
+  ],
+  "news": []
+}
