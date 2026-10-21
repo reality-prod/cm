@@ -125,6 +125,11 @@ def main():
         render_centred(MARK_MONO, size, SAFE_ZONE, os.path.join(out_dir, "ic_launcher_monochrome.png"))
         print("android", density, size)
 
+    LINUX_ICON_DIR = os.path.join(ROOT, "mobile", "desktopApp", "src", "jvmMain", "resources")
+    os.makedirs(LINUX_ICON_DIR, exist_ok=True)
+    render_centred(MARK, 512, SAFE_ZONE, os.path.join(LINUX_ICON_DIR, "app_icon.png"))
+    print("linux jvm icon generated (512x512)")
+
     # iOS: one opaque 1024 px icon, mark at 80%, white background.
     os.makedirs(IOS_ICON, exist_ok=True)
     ios_out = os.path.join(IOS_ICON, "AppIcon-1024.png")

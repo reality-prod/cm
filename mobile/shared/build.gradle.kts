@@ -14,6 +14,9 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
+    // ✅ Added the standard JVM target for desktop support
+    jvm()
+
     // Compiled only on macOS (Kotlin/Native for Apple needs Xcode). Skipped on Linux.
     listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {

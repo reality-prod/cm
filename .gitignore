@@ -3,7 +3,8 @@ local.properties
 .idea/
 *.xcodeproj
 *.jks
-
+tools/__pycache__
+mobile/.flatpak-builder/
 # Desktop build output
 desktop/core/target/
 

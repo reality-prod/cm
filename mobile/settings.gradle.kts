@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "codeberg-kmp"
-include(":shared", ":androidApp")
+include(":shared", ":androidApp", ":desktopApp")
