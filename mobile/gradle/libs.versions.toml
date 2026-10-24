@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # TODO(verify-versions): bump on first sync.
 [versions]
-agp = "8.7.3"
+agp = "8.13.0"
 kotlin = "2.0.21"
 compose = "1.7.3"
 activityCompose = "1.9.3"
 ktor = "3.0.1"
+coil = "3.0.4"
 secretService = "1.3.3"  # Added this version
 
 [libraries]
@@ -18,6 +19,8 @@ jetbrains-markdown = { module = "org.jetbrains:markdown", version = "0.7.3" } # 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" } # Added open-source Linux HTTP engine
 linux-secret-service = { group = "org.purejava", name = "secret-service", version.ref = "secretService" }
 

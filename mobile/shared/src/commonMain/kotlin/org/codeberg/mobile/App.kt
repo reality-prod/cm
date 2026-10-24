@@ -60,6 +60,19 @@ import org.codeberg.mobile.data.createSecureStore
 import org.codeberg.mobile.data.hapticTap
 import org.codeberg.mobile.data.setSecureWindow
 import org.codeberg.mobile.ui.Avatar
+import org.codeberg.mobile.ui.pressScale
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.ImageLoader
 import org.codeberg.mobile.ui.BrandColors
 import org.codeberg.mobile.ui.Chip
 import org.codeberg.mobile.ui.ChipTone
@@ -67,8 +80,9 @@ import org.codeberg.mobile.ui.CodebergTheme
 import org.codeberg.mobile.ui.DetailScreen
 import org.codeberg.mobile.ui.LinkDialog
 import org.codeberg.mobile.ui.LocalMonoFamily
-import org.codeberg.mobile.ui.ThemeSwitcherPill
 import org.codeberg.mobile.ui.Wordmark
+import org.codeberg.mobile.ui.SkeletonRows
+import org.codeberg.mobile.data.Profile
 
 private enum class Tab(val label: String) { Explore("Explore"), Repos("Repos"), Inbox("Inbox"), Profile("You") }
 
@@ -76,6 +90,10 @@ private val FieldShape = RoundedCornerShape(18.dp)
 
 @Composable
 fun App() {
+    // One image loader for the whole app: pictures go through Ktor, the same HTTP stack as the rest of the app.
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context).components { add(KtorNetworkFetcherFactory()) }.build()
+    }
     val scope = rememberCoroutineScope()
     val state = remember { AppState(scope, createSecureStore(), createDeviceAuth()) }
     val showSignIn = state.onboardingDone && state.user == null && !state.anonymous
@@ -115,13 +133,37 @@ private fun Shell(state: AppState) {
     PlatformBackHandler(enabled = top != null) { state.pop() }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            if (top != null) {
-                DetailScreen(state, top)
-            } else when (tab) {
-                Tab.Explore -> ExploreScreen(state)
-                Tab.Profile -> ProfileScreen(state)
-                Tab.Repos -> if (state.user != null) ReposTab(state) else SignInPrompt(state, "your repositories")
-                Tab.Inbox -> if (state.user != null) InboxTab(state) else SignInPrompt(state, "your notifications")
+            // Detail pages slide in from the right and out to the right; going back reverses the motion.
+            AnimatedContent(
+                targetState = top,
+                transitionSpec = {
+                    if (targetState != null) {
+                        (slideInHorizontally(tween(340, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(260)))
+                            .togetherWith(slideOutHorizontally(tween(260)) { -it / 8 } + fadeOut(tween(200)))
+                    } else {
+                        (slideInHorizontally(tween(340, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(260)))
+                            .togetherWith(slideOutHorizontally(tween(260)) { it / 5 } + fadeOut(tween(200)))
+                    }
+                },
+                label = "detail",
+            ) { detail ->
+                if (detail != null) {
+                    DetailScreen(state, detail)
+                } else {
+                    // Tabs crossfade: quick enough to never feel slow.
+                    AnimatedContent(
+                        targetState = tab,
+                        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
+                        label = "tab",
+                    ) { current ->
+                        when (current) {
+                            Tab.Explore -> ExploreScreen(state)
+                            Tab.Profile -> ProfileScreen(state)
+                            Tab.Repos -> if (state.user != null) ReposTab(state) else SignInPrompt(state, "your repositories")
+                            Tab.Inbox -> if (state.user != null) InboxTab(state) else SignInPrompt(state, "your notifications")
+                        }
+                    }
+                }
             }
         }
         if (top == null) {
@@ -146,7 +188,6 @@ private fun ExploreScreen(state: AppState) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Wordmark()
-                ThemeSwitcherPill(mode = state.themeMode, onSelect = state::setThemeMode)
             }
             Spacer(Modifier.height(20.dp))
             Text("Explore", style = MaterialTheme.typography.headlineLarge)
@@ -200,7 +241,7 @@ private fun ExploreScreen(state: AppState) {
         }
         item {
             when {
-                state.loading -> Box(Modifier.fillMaxWidth().padding(16.dp), Alignment.Center) { CircularProgressIndicator() }
+                state.loading -> SkeletonRows(count = 3)
                 state.listError != null -> Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text(state.listError ?: "", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                     OutlinedButton(onClick = { state.search(q) }) { Text("Retry") }
@@ -213,16 +254,18 @@ private fun ExploreScreen(state: AppState) {
 
 @Composable
 internal fun RepoCard(repo: Repo, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
     Surface(
         onClick = onClick,
+        interactionSource = interaction,
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().pressScale(interaction),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Avatar(repo.fullName, 40.dp)
+                Avatar(repo.owner.login.ifBlank { repo.fullName.substringBefore('/') }, 40.dp, imageUrl = repo.owner.avatarUrl.ifBlank { null })
                 Column {
                     Text(repo.fullName.substringBefore('/'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(repo.fullName.substringAfter('/'), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -367,25 +410,6 @@ private fun ProfileScreen(state: AppState) {
                         }
                     }
                 }
-            }
-        }
-
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                Modifier.padding(20.dp).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Appearance", style = MaterialTheme.typography.titleMedium)
-                    Text("Light, Dark or System theme", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                ThemeSwitcherPill(mode = state.themeMode, onSelect = state::setThemeMode)
             }
         }
 

@@ -72,6 +72,7 @@ data class Repo(
     @SerialName("stars_count") val stars: Int = 0,
     @SerialName("updated_at") val updatedAt: String = "",
     @SerialName("private") val isPrivate: Boolean = false,
+    val owner: RepoOwner = RepoOwner(),
 )
 
 @Serializable private data class RepoSearch(val data: List<Repo> = emptyList())

@@ -52,6 +52,7 @@ import org.codeberg.mobile.ui.Chip
 import org.codeberg.mobile.ui.ChipTone
 import org.codeberg.mobile.ui.CodebergMark
 import org.codeberg.mobile.ui.PillTabs
+import org.codeberg.mobile.ui.SkeletonRows
 
 @Composable
 internal fun SignInPrompt(state: AppState, what: String) {
@@ -97,7 +98,7 @@ internal fun <T> PagedList(key: Any, fetch: suspend (Int) -> Page<T>, empty: Str
         items(rows) { row(it) }
         item {
             when {
-                loading -> Box(Modifier.fillMaxWidth().padding(16.dp), Alignment.Center) { CircularProgressIndicator(strokeWidth = 3.dp) }
+                loading -> SkeletonRows(count = 3)
                 error != null -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(error ?: "", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                     OutlinedButton(onClick = { scope.launch { load(page) } }) { Text("Retry") }

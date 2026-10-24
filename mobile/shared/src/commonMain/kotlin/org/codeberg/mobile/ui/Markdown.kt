@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -59,19 +61,21 @@ private class Md(
     val blockBg: Color,
     val muted: Color,
     val onLink: (String) -> Unit,
+    /** Where relative picture paths start, e.g. the repository's raw branch. Null: relative pictures are skipped. */
+    val imageBase: String?,
 )
 
 /**
- * Renders untrusted Markdown natively. No WebView or JavaScript; raw HTML is dropped; images are never fetched
- * (no IP leak or tracking pixels); only validated http(s) links are clickable, and the app confirms before opening.
- * TODO: render tables as a grid, syntax highlighting, repo-relative links.
+ * Renders untrusted Markdown natively. No WebView or JavaScript; raw HTML is dropped. Pictures on their own line are
+ * shown as pictures (see RemoteImage for the privacy rules); pictures inside a sentence become links.
+ * Only validated http(s) links are clickable, and the app confirms before opening.
  */
 @Composable
-fun Markdown(text: String, onLink: (String) -> Unit, modifier: Modifier = Modifier) {
+fun Markdown(text: String, onLink: (String) -> Unit, modifier: Modifier = Modifier, imageBase: String? = null) {
     val src = remember(text) { text.take(MAX_CHARS) }
     val root = remember(src) { MarkdownParser(GFMFlavourDescriptor()).buildMarkdownTreeFromString(src) }
     val s = MaterialTheme.colorScheme
-    val md = Md(src, s.primary, s.outlineVariant, s.background, s.onSurfaceVariant, onLink)
+    val md = Md(src, s.primary, s.outlineVariant, s.background, s.onSurfaceVariant, onLink, imageBase)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) { Blocks(root, md, 0) }
 }
 
@@ -89,7 +93,17 @@ private fun content(node: ASTNode): ASTNode =
 private fun Block(node: ASTNode, md: Md, depth: Int) {
     val ty = MaterialTheme.typography
     when (node.type) {
-        MarkdownElementTypes.PARAGRAPH -> InlineText(node, md, ty.bodyMedium)
+        MarkdownElementTypes.PARAGRAPH -> {
+            // A paragraph that is only a picture is shown as a picture; anything else is text.
+            val only = node.children
+                .filter { it.type != MarkdownTokenTypes.WHITE_SPACE && it.type != MarkdownTokenTypes.EOL }
+                .singleOrNull()
+            if (only != null && only.type == MarkdownElementTypes.IMAGE) {
+                MarkdownImage(only, md)
+            } else {
+                InlineText(node, md, ty.bodyMedium)
+            }
+        }
         MarkdownElementTypes.ATX_1, MarkdownElementTypes.SETEXT_1 -> InlineText(content(node), md, ty.headlineMedium, true)
         MarkdownElementTypes.ATX_2, MarkdownElementTypes.SETEXT_2 -> InlineText(content(node), md, ty.titleLarge, true)
         MarkdownElementTypes.ATX_3, MarkdownElementTypes.ATX_4, MarkdownElementTypes.ATX_5, MarkdownElementTypes.ATX_6 ->
@@ -114,6 +128,23 @@ private fun fenceBody(node: ASTNode, src: String): String {
     val last = body.lastOrNull()?.trim()
     val trimmed = if (last != null && (last.startsWith("```") || last.startsWith("~~~"))) body.dropLast(1) else body
     return trimmed.joinToString("\n")
+}
+
+@Composable
+private fun MarkdownImage(node: ASTNode, md: Md) {
+    val alt = node.children.firstOrNull { it.type == MarkdownElementTypes.LINK_TEXT }
+        ?.getTextInNode(md.src)?.toString().orEmpty()
+    val dest = node.children.firstOrNull { it.type == MarkdownElementTypes.LINK_DESTINATION }
+        ?.getTextInNode(md.src)?.toString().orEmpty()
+    RemoteImage(
+        url = resolveImageUrl(dest, md.imageBase),
+        contentDescription = alt.ifBlank { null },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .clip(RoundedCornerShape(16.dp)),
+        contentScale = ContentScale.Fit,
+    )
 }
 
 @Composable

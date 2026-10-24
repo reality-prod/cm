@@ -156,10 +156,22 @@ internal fun SettingsScreen(state: AppState) {
                 }
             }
             Group("Privacy") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Load images from other sites", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Codeberg's own pictures always load. Other sites see your address when a picture loads.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = state.externalImages, onCheckedChange = { state.setExternalImages(it) })
+                }
                 Text(
                     "Talks only to codeberg.org, over HTTPS, trusting only Let's Encrypt's certificate authorities with pinned " +
-                        "keys. No analytics, trackers, ads or third-party servers. Images in content are never loaded.",
-                    style = MaterialTheme.typography.bodyMedium,
+                        "keys. No analytics, trackers, ads or third-party servers.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Group("About") {

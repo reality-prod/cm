@@ -8,13 +8,13 @@ plugins {
 
 android {
     namespace = "org.codeberg.mobile"
-    // Built with Android 16 (API 36), targeting Android 16/17 (pass -PtargetSdk=37 to target API 37).
-    compileSdk = 36
+    // Built and targeted at Android 17 (API 37). Google Play rejects apps that target older releases.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = providers.gradleProperty("appId").getOrElse("org.codeberg.yourusername.codebergmobile")
         minSdk = 26
-        targetSdk = providers.gradleProperty("targetSdk").map(String::toInt).getOrElse(36)
+        targetSdk = providers.gradleProperty("targetSdk").map(String::toInt).getOrElse(37)
         versionCode = 1
         versionName = "0.2.0"
     }

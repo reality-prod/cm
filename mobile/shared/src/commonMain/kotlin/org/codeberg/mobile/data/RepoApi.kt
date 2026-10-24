@@ -8,6 +8,13 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 // TODO(verify-api): field names follow the Gitea/Forgejo swagger; unverified against live Codeberg.
+/** The account that owns a repository or user. avatar_url is an absolute Codeberg URL. */
+@Serializable
+data class RepoOwner(
+    val login: String = "",
+    @SerialName("avatar_url") val avatarUrl: String = "",
+)
+
 @Serializable data class UserRef(val login: String = "")
 
 @Serializable
@@ -20,6 +27,7 @@ data class RepoDetail(
     @SerialName("default_branch") val defaultBranch: String = "",
     val language: String = "",
     val archived: Boolean = false,
+    val owner: RepoOwner = RepoOwner(),
 )
 
 @Serializable

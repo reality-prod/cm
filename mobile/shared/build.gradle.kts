@@ -35,6 +35,8 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
             implementation(libs.jetbrains.markdown)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
             implementation(compose.components.resources)
         }
         commonTest.dependencies {
@@ -59,7 +61,7 @@ compose.resources {
 
 android {
     namespace = "org.codeberg.mobile.shared"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig { minSdk = 26 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

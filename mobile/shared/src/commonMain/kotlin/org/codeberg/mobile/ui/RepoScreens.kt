@@ -36,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -86,9 +87,7 @@ private fun RepoHome(state: AppState, full: String, link: (String) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     val s = MaterialTheme.colorScheme
     Box(Modifier.fillMaxSize()) {
-        // Soft brand glow behind the header.
-        Box(Modifier.fillMaxWidth().height(240.dp).background(Brush.verticalGradient(listOf(s.primary.copy(alpha = 0.22f), Color.Transparent))))
-        CodebergMark(180.dp, Modifier.align(Alignment.TopEnd).alpha(0.10f))
+        RepoBanner(state, full)
         Column(Modifier.fillMaxSize()) {
             TopBar(full.substringAfter('/'), full.substringBefore('/'), state::pop, onShare = { shareText("https://codeberg.org/$full") })
             RepoHeader(state, full)
@@ -102,6 +101,28 @@ private fun RepoHome(state: AppState, full: String, link: (String) -> Unit) {
     }
 }
 
+/**
+ * The repository's banner: the first picture in its README, faded into the page. Without one, the brand glow and the
+ * mark stand in, so the header always has a finished look.
+ */
+@Composable
+private fun RepoBanner(state: AppState, full: String) {
+    val banner by produceState<String?>(null, full) {
+        value = try { findBannerUrl(state.api, full) } catch (e: ApiException) { null }
+    }
+    val s = MaterialTheme.colorScheme
+    Box(Modifier.fillMaxWidth().height(220.dp)) {
+        val url = banner
+        if (url != null) {
+            RemoteImage(url = url, contentDescription = "Repository banner", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, s.background))))
+        } else {
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(s.primary.copy(alpha = 0.22f), Color.Transparent))))
+            CodebergMark(180.dp, Modifier.align(Alignment.TopEnd).alpha(0.10f))
+        }
+    }
+}
+
 @Composable
 private fun RepoHeader(state: AppState, full: String) {
     val detail by produceState<RepoDetail?>(null, full) {
@@ -109,7 +130,11 @@ private fun RepoHeader(state: AppState, full: String) {
     }
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Avatar(full, 52.dp)
+            Avatar(
+                name = detail?.owner?.login?.ifBlank { null } ?: full.substringBefore('/'),
+                size = 52.dp,
+                imageUrl = detail?.owner?.avatarUrl,
+            )
             val d = detail
             Text(
                 d?.description?.ifBlank { null } ?: "No description",
@@ -150,8 +175,12 @@ private fun DirList(state: AppState, full: String, path: String, showReadme: Boo
                             Loadable(
                                 key = "readme:$full:${readme.path}",
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                                load = { state.api.rawFile(full, readme.path) },
-                            ) { Markdown(it, link) }
+                                // The default branch is needed so relative pictures in the README resolve.
+                                load = {
+                                    val branch = state.api.repoDetail(full).defaultBranch.ifBlank { "main" }
+                                    branch to state.api.rawFile(full, readme.path)
+                                },
+                            ) { (branch, text) -> Markdown(text, link, imageBase = rawBase(full, branch)) }
                         }
                     }
                 }
@@ -268,7 +297,7 @@ private fun IssueList(state: AppState, full: String, type: String) {
             items(items) { issue -> IssueCard(issue) { state.push(Screen.IssueView(full, issue.number)) } }
             item {
                 when {
-                    loading -> Box(Modifier.fillMaxWidth().padding(16.dp), Alignment.Center) { CircularProgressIndicator(strokeWidth = 3.dp) }
+                    loading -> SkeletonRows(count = 3)
                     error != null -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(error ?: "", color = MaterialTheme.colorScheme.error)
                         OutlinedButton(onClick = { scope.launch { fetch(page.coerceAtLeast(1)) } }) { Text("Retry") }

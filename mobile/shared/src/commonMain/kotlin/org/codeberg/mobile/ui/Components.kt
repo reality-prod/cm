@@ -46,19 +46,32 @@ import org.codeberg.mobile.data.AppState
 import org.codeberg.mobile.data.ThemeMode
 import org.codeberg.mobile.data.errorText
 import org.codeberg.mobile.data.hostOf
+import org.codeberg.mobile.data.safeHttpUrl
 
 fun compact(n: Int): String = if (n >= 1000) "${n / 1000}.${(n % 1000) / 100}k" else n.toString()
 
 enum class ChipTone { Neutral, Blue, Green, Yellow, Orange }
 
+/**
+ * A round avatar. Shows the account's picture when it has one (Codeberg avatars load automatically); otherwise the
+ * initial on a palette gradient, so every account keeps a distinct colour while its picture loads.
+ */
 @Composable
-fun Avatar(name: String, size: Dp = 44.dp) {
+fun Avatar(name: String, size: Dp = 44.dp, imageUrl: String? = null) {
     // Uses the official Codeberg palette gradients (Blue, Green, and Amber/Orange) so avatars are distinct.
     val bucket = (name.hashCode() and 0x7FFFFFFF) % 3
     val gradient = when (bucket) {
         0 -> listOf(BrandColors.brightBlue, BrandColors.brandBlue)
         1 -> listOf(BrandColors.green, BrandColors.darkGreen)
         else -> listOf(BrandColors.orange, BrandColors.brown)
+    }
+    if (imageUrl != null && imageUrl.isNotBlank()) {
+        RemoteImage(
+            url = imageUrl,
+            contentDescription = name,
+            modifier = Modifier.size(size).clip(CircleShape),
+        )
+        return
     }
     Box(
         Modifier.size(size).clip(CircleShape).background(Brush.linearGradient(gradient)),
@@ -221,7 +234,7 @@ fun <T> Loadable(key: Any, modifier: Modifier = Modifier.fillMaxSize(), load: su
         }
     }
     when (val s = state) {
-        Load.Loading -> Box(modifier, Alignment.Center) { CircularProgressIndicator(strokeWidth = 3.dp) }
+        Load.Loading -> SkeletonRows(modifier = modifier)
         is Load.Err -> Box(modifier, Alignment.Center) {
             Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(s.message, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)

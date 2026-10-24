@@ -11,12 +11,14 @@ import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.codeberg.mobile.ui.ImagePrefs
 
 private const val TOKEN = "access_token"
 private const val USER = "username"
 private const val ONBOARDING = "onboarding_done"
 private const val ANONYMOUS = "anonymous_mode"
 private const val INTERESTS = "interests"
+private const val EXTERNAL_IMAGES = "external_images"
 
 // TODO(verify-api): scope names. Only what the current write feature needs, nothing broader.
 private val WRITE_SCOPES = listOf("read:notification", "write:notification")
@@ -67,6 +69,15 @@ class AppState(
     }
 
     @JvmName("updateInterests")
+    /** Off by default. When on, images from other sites load without a tap, and those sites see your address. */
+    var externalImages by mutableStateOf(false); private set
+
+    fun setExternalImages(on: Boolean) {
+        externalImages = on
+        org.codeberg.mobile.ui.ImagePrefs.allowExternal = on
+        store.put(EXTERNAL_IMAGES, if (on) "1" else "0")
+    }
+
     fun setInterests(topics: List<String>) {
         interests = topics
         store.put(INTERESTS, topics.joinToString(","))
@@ -180,6 +191,8 @@ class AppState(
         // Onboarding is finished for anyone who was already signed in before it existed.
         onboardingDone = store.get(ONBOARDING) == "1" || user != null
         interests = store.get(INTERESTS)?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+        externalImages = store.get(EXTERNAL_IMAGES) == "1"
+        org.codeberg.mobile.ui.ImagePrefs.allowExternal = externalImages
         themeMode = store.get(THEME_MODE)?.let { savedMode -> ThemeMode.entries.firstOrNull { it.name == savedMode } } ?: ThemeMode.Light
         if (user != null) loadProfile()
     }
