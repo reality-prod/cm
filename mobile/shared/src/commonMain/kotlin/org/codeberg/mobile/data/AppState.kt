@@ -68,16 +68,17 @@ class AppState(
         }
     }
 
-    @JvmName("updateInterests")
     /** Off by default. When on, images from other sites load without a tap, and those sites see your address. */
     var externalImages by mutableStateOf(false); private set
 
+    @JvmName("updateExternalImages")
     fun setExternalImages(on: Boolean) {
         externalImages = on
         org.codeberg.mobile.ui.ImagePrefs.allowExternal = on
         store.put(EXTERNAL_IMAGES, if (on) "1" else "0")
     }
 
+    @JvmName("updateInterests")
     fun setInterests(topics: List<String>) {
         interests = topics
         store.put(INTERESTS, topics.joinToString(","))
