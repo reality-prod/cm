@@ -22,7 +22,7 @@ local.properties
 .env
 .env.*
 !.env.example
-
+*.log
 # Local signing and credential files
 **/gradle/release.keystore
 # ==============================================================================
@@ -38,3 +38,4 @@ local.properties
 # Un-ignore build.gradle.kts specifically, wherever it is located
 !**/build.gradle.kts
 
+mobile/.kotlin/
