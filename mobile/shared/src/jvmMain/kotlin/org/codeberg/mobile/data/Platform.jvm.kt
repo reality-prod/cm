@@ -68,3 +68,24 @@ actual fun shareText(text: String) {
     }
 }
 
+private object NativeRust {
+    init {
+        runCatching {
+            val arch = when (System.getProperty("os.arch")) {
+                "aarch64", "arm64" -> "linux-arm64"
+                else -> "linux-x64"
+            }
+            val library = NativeRust::class.java.getResourceAsStream("/natives/$arch/libcm_native.so")
+                ?: return@runCatching
+            val path = java.nio.file.Files.createTempFile("cm-native-", ".so")
+            library.use { input -> java.nio.file.Files.copy(input, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
+            path.toFile().deleteOnExit()
+            System.load(path.toAbsolutePath().toString())
+        }
+    }
+    @JvmStatic external fun countLines(text: String): Int
+}
+
+actual fun nativeLineCount(text: String): Int = runCatching { NativeRust.countLines(text) }
+    .getOrElse { if (text.isEmpty()) 0 else text.count { it == '\n' } + 1 }
+

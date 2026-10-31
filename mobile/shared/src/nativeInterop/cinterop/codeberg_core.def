@@ -1,0 +1,3 @@
+headers = codeberg_core.h
+headerFilter = codeberg_core.h
+package = org.codeberg.mobile.nativecore

@@ -18,10 +18,25 @@ kotlin {
     jvm()
 
     // Compiled only on macOS (Kotlin/Native for Apple needs Xcode). Skipped on Linux.
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+    val iosTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64())
+    val rustIosTargets = mapOf(
+        "iosX64" to "x86_64-apple-ios",
+        "iosArm64" to "aarch64-apple-ios",
+        "iosSimulatorArm64" to "aarch64-apple-ios-sim",
+    )
+    iosTargets.forEach { target ->
+        target.compilations.getByName("main").cinterops.create("nativecore") {
+            defFile(project.file("src/nativeInterop/cinterop/codeberg_core.def"))
+            includeDirs(project.file("../../rust/core/include"))
+        }
         target.binaries.framework {
             baseName = "Shared" // Swift: `import Shared`
             isStatic = true
+            val rustTarget = rustIosTargets.getValue(target.name)
+            linkerOpts(
+                "-L${project.file("../../rust/core/target/$rustTarget/release").absolutePath}",
+                "-lcodeberg_core",
+            )
         }
     }
 
@@ -66,5 +81,49 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    val localProperties = project.file("../local.properties").takeIf { it.exists() }
+    val localSdk = localProperties?.readLines()?.firstOrNull { it.startsWith("sdk.dir=") }?.substringAfter('=')
+    val sdkCandidates = listOfNotNull(
+        System.getenv("ANDROID_HOME"),
+        System.getenv("ANDROID_SDK_ROOT"),
+        localSdk,
+        "${System.getProperty("user.home")}/Library/Android/sdk",
+        "${System.getProperty("user.home")}/Android/Sdk",
+    )
+    val hasSdk = sdkCandidates.any { project.file(it).isDirectory }
+    if (hasSdk) {
+        externalNativeBuild {
+            cmake {
+                path = file("src/androidMain/cpp/CMakeLists.txt")
+                version = "3.22.1"
+            }
+        }
+    }
+}
+
+// Build the shared Rust core for each Apple architecture before Kotlin/Native links its framework.
+val rustIosBuilds = mapOf(
+    "iosX64" to "x86_64-apple-ios",
+    "iosArm64" to "aarch64-apple-ios",
+    "iosSimulatorArm64" to "aarch64-apple-ios-sim",
+).map { (targetName, rustTarget) ->
+    targetName to tasks.register<Exec>("buildRust${targetName.replaceFirstChar { it.uppercase() }}") {
+        val rustRoot = project.file("../../rust/core")
+        inputs.file(rustRoot.resolve("Cargo.toml"))
+        inputs.file(rustRoot.resolve("Cargo.lock"))
+        inputs.dir(rustRoot.resolve("src"))
+        outputs.file(rustRoot.resolve("target/$rustTarget/release/libcodeberg_core.a"))
+        commandLine(
+            "cargo", "build", "--manifest-path", rustRoot.resolve("Cargo.toml").absolutePath,
+            "--release", "--target", rustTarget,
+        )
+    }
+}.toMap()
+
+tasks.configureEach {
+    val iosBuild = rustIosBuilds.entries.firstOrNull { (target, _) -> name.contains(target, ignoreCase = true) }
+    if (name.startsWith("link") && name.contains("Framework", ignoreCase = true) && iosBuild != null) {
+        dependsOn(iosBuild.value)
     }
 }

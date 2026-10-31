@@ -19,12 +19,9 @@ A modified build of this app could, among other things:
 - alter commits, reviews, or release artifacts under your identity;
 - silently persist access to your account even after you uninstall the app.
 
-**Official project source:** [Codeberg Mobile on Codeberg](https://codeberg.org/)
+**Official project source:** [reality-prod/cm on GitHub](https://github.com/reality-prod/cm)
 
-**Official release downloads:** [Codeberg Mobile on GitHub Releases](https://github.com/)
-
-> [!NOTE]
-> These links currently point to the hosting platforms, not a verified project-specific repository or release page. Replace them with the exact project URLs before publishing this README.
+**Official release downloads:** [reality-prod/cm releases](https://github.com/reality-prod/cm/releases)
 
 Practical guidance before installing:
 
@@ -83,16 +80,31 @@ Security properties depend on the platform, the device's configuration, and the 
 |---|---|
 | Android | Kotlin Multiplatform / Compose Multiplatform |
 | iOS | Kotlin Multiplatform / Compose Multiplatform |
+| Linux Mobile | Compose Desktop JVM package for x86_64 and AArch64 Linux |
 
 **Minimum Android SDK:** API 26 (Android 8.0).
 
-The current Android build configuration targets API 36 by default. Actual feature availability depends on the platform and device; some features may be limited on older devices or where the required hardware (such as a biometric sensor) is unavailable.
+The current Android build configuration targets API 37 by default. Actual feature availability depends on the platform and device; some features may be limited on older devices or where the required hardware (such as a biometric sensor) is unavailable.
 
 ## Building from source
 
 Building from source is the most transparent way to verify what the application does.
 ```make``` or ```gmake``` will show you the options you need to build the app.
 Release signing credentials must be configured locally or through a secure build environment. Never commit private signing keys or passwords to the repository, and never accept a build from someone who asks you to use their signing credentials.
+
+### Shared Rust core
+
+The small `rust/core` library provides an allocation-free source line counter used by the file viewer. Kotlin/Native links the Rust static library directly on iOS; Android and Linux use a thin C JNI adapter, with the same Rust implementation underneath. If native loading is unavailable, the viewer falls back to Kotlin line counting.
+
+Install Rust with `rustup`, then add the targets for the platforms you build:
+
+```sh
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+```
+
+Android builds also require the Android SDK, NDK, and CMake. The Android CMake build compiles the matching Rust target. iOS framework builds need Xcode and build their Rust archive for the selected device or simulator target. Linux packages build and bundle the JNI library on the Linux build host for its current architecture.
 
 ## Security and responsible disclosure
 

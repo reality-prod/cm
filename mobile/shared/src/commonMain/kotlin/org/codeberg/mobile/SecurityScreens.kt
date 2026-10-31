@@ -40,7 +40,6 @@ import org.codeberg.mobile.data.AppState
 import org.codeberg.mobile.ui.Chip
 import org.codeberg.mobile.ui.ChipTone
 import org.codeberg.mobile.ui.CodebergMark
-import org.codeberg.mobile.ui.ThemeSwitcherPill
 import org.codeberg.mobile.ui.TopBar
 import org.codeberg.mobile.ui.VerticalLogo
 
@@ -84,19 +83,6 @@ internal fun SettingsScreen(state: AppState) {
     Column(Modifier.fillMaxSize()) {
         TopBar("Settings", null, state::pop)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Group("Appearance") {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Theme", style = MaterialTheme.typography.titleMedium)
-                        Text("Switch between crisp Light, Dark or System.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    ThemeSwitcherPill(mode = state.themeMode, onSelect = state::setThemeMode)
-                }
-            }
             Group("Security") {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {

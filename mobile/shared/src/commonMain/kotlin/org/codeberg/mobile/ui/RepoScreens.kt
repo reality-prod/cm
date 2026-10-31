@@ -19,10 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,7 +30,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,20 +42,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import org.codeberg.mobile.SettingsScreen
 import org.codeberg.mobile.data.ApiException
 import org.codeberg.mobile.data.AppState
-import org.codeberg.mobile.data.Comment
 import org.codeberg.mobile.data.Entry
-import org.codeberg.mobile.data.Issue
 import org.codeberg.mobile.data.RepoDetail
 import org.codeberg.mobile.data.Screen
-import org.codeberg.mobile.data.comments
-import org.codeberg.mobile.data.errorText
-import org.codeberg.mobile.data.issue
-import org.codeberg.mobile.data.issues
 import org.codeberg.mobile.data.listDir
+import org.codeberg.mobile.data.nativeLineCount
 import org.codeberg.mobile.data.rawFile
 import org.codeberg.mobile.data.repoDetail
 import org.codeberg.mobile.data.safeHttpUrl
@@ -69,6 +60,7 @@ fun DetailScreen(state: AppState, screen: Screen) {
     val link = { url: String -> state.pendingLink = safeHttpUrl(url) } // Validated, then confirmed by the user.
     when (screen) {
         is Screen.RepoHome -> RepoHome(state, screen.full, link)
+        is Screen.Forks -> ForksScreen(state, screen.full)
         is Screen.DirView -> Column(Modifier.fillMaxSize()) {
             TopBar(screen.path.substringAfterLast('/'), screen.full, state::pop)
             DirList(state, screen.full, screen.path, false, link)
@@ -110,11 +102,18 @@ private fun RepoBanner(state: AppState, full: String) {
     val banner by produceState<String?>(null, full) {
         value = try { findBannerUrl(state.api, full) } catch (e: ApiException) { null }
     }
+    var bannerFailed by remember(banner) { mutableStateOf(false) }
     val s = MaterialTheme.colorScheme
+    val bannerUrl = banner
     Box(Modifier.fillMaxWidth().height(220.dp)) {
-        val url = banner
-        if (url != null) {
-            RemoteImage(url = url, contentDescription = "Repository banner", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        if (bannerUrl != null && !bannerFailed && safeHttpUrl(bannerUrl) != null) {
+            RemoteImage(
+                url = bannerUrl,
+                contentDescription = "Repository banner",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                onError = { bannerFailed = true },
+            )
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, s.background))))
         } else {
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(s.primary.copy(alpha = 0.22f), Color.Transparent))))
@@ -133,7 +132,7 @@ private fun RepoHeader(state: AppState, full: String) {
             Avatar(
                 name = detail?.owner?.login?.ifBlank { null } ?: full.substringBefore('/'),
                 size = 52.dp,
-                imageUrl = detail?.owner?.avatarUrl,
+                imageUrl = detail?.let { it.avatarUrl.ifBlank { it.owner.avatarUrl } },
             )
             val d = detail
             Text(
@@ -147,7 +146,9 @@ private fun RepoHeader(state: AppState, full: String) {
         detail?.let { d ->
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Chip("\u2605 ${compact(d.stars)}", tone = ChipTone.Yellow)
-                Chip("${compact(d.forks)} forks", tone = ChipTone.Blue)
+                Surface(onClick = { state.push(Screen.Forks(full)) }, shape = RoundedCornerShape(50), color = Color.Transparent) {
+                    Chip("${compact(d.forks)} forks · view", tone = ChipTone.Blue)
+                }
                 Chip("${compact(d.openIssues)} open issues", tone = ChipTone.Green)
                 if (d.defaultBranch.isNotBlank()) Chip(d.defaultBranch, tone = ChipTone.Neutral)
                 if (d.language.isNotBlank()) Chip(d.language, tone = ChipTone.Green)
@@ -237,18 +238,27 @@ private fun CodeView(text: String) {
         text.take(8000).contains('\u0000') -> Notice("Binary file. Preview isn't available.")
         text.length > 2_000_000 -> Notice("File is too large to preview.")
         else -> {
-            val lines = remember(text) { text.split('\n') }
+            val lines = remember(text) { if (text.isEmpty()) emptyList() else text.split('\n') }
+            val lineCount = remember(text) { nativeLineCount(text) }
             val mono = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-            Box(
-                Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
-                    .background(s.surfaceVariant, RoundedCornerShape(20.dp)).horizontalScroll(rememberScrollState()),
-            ) {
-                LazyColumn(contentPadding = PaddingValues(vertical = 12.dp, horizontal = 12.dp)) {
-                    items(lines.size) { i ->
-                        Row {
-                            Text((i + 1).toString().padStart(4), style = mono, color = s.onSurfaceVariant.copy(alpha = 0.6f))
-                            Spacer(Modifier.width(12.dp))
-                            Text(lines[i], style = mono, softWrap = false)
+            Column(Modifier.fillMaxSize()) {
+                Text(
+                    "$lineCount lines · ${text.length} characters",
+                    Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 8.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = s.onSurfaceVariant,
+                )
+                Box(
+                    Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                        .background(s.surfaceVariant, RoundedCornerShape(20.dp)).horizontalScroll(rememberScrollState()),
+                ) {
+                    LazyColumn(contentPadding = PaddingValues(vertical = 12.dp, horizontal = 12.dp)) {
+                        items(lines.size) { i ->
+                            Row {
+                                Text((i + 1).toString().padStart(4), style = mono, color = s.onSurfaceVariant.copy(alpha = 0.6f))
+                                Spacer(Modifier.width(12.dp))
+                                Text(lines[i], style = mono, softWrap = false)
+                            }
                         }
                     }
                 }
@@ -260,119 +270,4 @@ private fun CodeView(text: String) {
 @Composable
 private fun Notice(text: String) {
     Box(Modifier.fillMaxSize(), Alignment.Center) { Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-}
-
-@Composable
-private fun IssueList(state: AppState, full: String, type: String) {
-    var open by remember { mutableStateOf(true) }
-    var items by remember(open) { mutableStateOf<List<Issue>>(emptyList()) }
-    var page by remember(open) { mutableIntStateOf(1) }
-    var hasMore by remember(open) { mutableStateOf(false) }
-    var loading by remember(open) { mutableStateOf(true) }
-    var error by remember(open) { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    suspend fun fetch(p: Int) {
-        loading = true
-        error = null
-        try {
-            val r = state.api.issues(full, type, if (open) "open" else "closed", p)
-            items = if (p == 1) r.items else items + r.items
-            hasMore = r.hasMore
-            page = p + 1
-        } catch (e: ApiException) {
-            error = errorText(e.error)
-        } finally {
-            loading = false
-        }
-    }
-    LaunchedEffect(open) { fetch(1) }
-
-    Column(Modifier.fillMaxSize()) {
-        PillTabs(listOf("Open", "Closed"), if (open) 0 else 1, { open = it == 0 }, Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
-        LazyColumn(
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 40.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(items) { issue -> IssueCard(issue) { state.push(Screen.IssueView(full, issue.number)) } }
-            item {
-                when {
-                    loading -> SkeletonRows(count = 3)
-                    error != null -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(error ?: "", color = MaterialTheme.colorScheme.error)
-                        OutlinedButton(onClick = { scope.launch { fetch(page.coerceAtLeast(1)) } }) { Text("Retry") }
-                    }
-                    items.isEmpty() -> Text("Nothing here.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    hasMore -> LaunchedEffect(page) { fetch(page) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun IssueCard(issue: Issue, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Chip(if (issue.state == "open") "Open" else "Closed", tone = if (issue.state == "open") ChipTone.Green else ChipTone.Orange)
-                Text("#${issue.number}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(issue.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            val meta = buildString {
-                append(issue.user.login)
-                append("  \u00B7  ${issue.createdAt.substringBefore('T')}")
-                if (issue.comments > 0) append("  \u00B7  ${issue.comments} comments")
-            }
-            Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun IssueScreen(state: AppState, full: String, number: Int, link: (String) -> Unit) {
-    Column(Modifier.fillMaxSize()) {
-        TopBar("#$number", full, state::pop, onShare = { shareText("https://codeberg.org/$full/issues/$number") })
-        Loadable(key = "$full#$number", load = { state.api.issue(full, number) to state.api.comments(full, number) }) { (issue, comments) ->
-            LazyColumn(
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                item {
-                    Card {
-                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Chip(if (issue.state == "open") "Open" else "Closed", tone = if (issue.state == "open") ChipTone.Green else ChipTone.Orange)
-                            Text(issue.title, style = MaterialTheme.typography.headlineMedium)
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Avatar(issue.user.login, 28.dp)
-                                Text("${issue.user.login}  \u00B7  ${issue.createdAt.substringBefore('T')}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            if (issue.body.isBlank()) Text("No description.", color = MaterialTheme.colorScheme.onSurfaceVariant) else Markdown(issue.body, link)
-                        }
-                    }
-                }
-                items(comments) { c -> CommentCard(c, link) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommentCard(c: Comment, link: (String) -> Unit) {
-    Card {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Avatar(c.user.login, 28.dp)
-                Text(c.user.login, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
-                Text(c.createdAt.substringBefore('T'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Markdown(c.body, link)
-        }
-    }
 }

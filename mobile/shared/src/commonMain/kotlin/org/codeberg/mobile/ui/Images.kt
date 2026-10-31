@@ -56,9 +56,12 @@ fun RemoteImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    onError: (() -> Unit)? = null,
 ) {
     val safe = url?.let { safeHttpUrl(it) } ?: return
     var approved by remember(safe) { mutableStateOf(false) }
+    var failed by remember(safe) { mutableStateOf(false) }
+    if (failed) return
     if (approved || imageLoadsAutomatically(safe)) {
         // Shimmer shows while the picture loads; the picture covers it once it arrives.
         Box(modifier.shimmer()) {
@@ -67,6 +70,10 @@ fun RemoteImage(
                 contentDescription = contentDescription,
                 contentScale = contentScale,
                 modifier = Modifier.fillMaxSize(),
+                onError = {
+                    failed = true
+                    onError?.invoke()
+                },
             )
         }
     } else {

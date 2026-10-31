@@ -123,3 +123,11 @@ actual fun shareText(text: String) {
     }
     a.startActivity(Intent.createChooser(send, null))
 }
+
+private object NativeRust {
+    init { System.loadLibrary("cm_native") }
+    @JvmStatic external fun countLines(text: String): Int
+}
+
+actual fun nativeLineCount(text: String): Int = runCatching { NativeRust.countLines(text) }
+    .getOrElse { if (text.isEmpty()) 0 else text.count { it == '\n' } + 1 }

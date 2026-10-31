@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+cmake_minimum_required(VERSION 3.22)
+project(codeberg_mobile_native C)
+
+set(RUST_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../../../rust/core")
+if(ANDROID_ABI STREQUAL "arm64-v8a")
+    set(RUST_TARGET aarch64-linux-android)
+elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(RUST_TARGET armv7-linux-androideabi)
+elseif(ANDROID_ABI STREQUAL "x86")
+    set(RUST_TARGET i686-linux-android)
+elseif(ANDROID_ABI STREQUAL "x86_64")
+    set(RUST_TARGET x86_64-linux-android)
+else()
+    message(FATAL_ERROR "Unsupported Android ABI: ${ANDROID_ABI}")
+endif()
+
+set(RUST_ARCHIVE "${RUST_ROOT}/target/${RUST_TARGET}/release/libcodeberg_core.a")
+string(TOUPPER "${RUST_TARGET}" CARGO_TARGET_KEY)
+string(REPLACE "-" "_" CARGO_TARGET_KEY "${CARGO_TARGET_KEY}")
+set(ENV{CARGO_TARGET_${CARGO_TARGET_KEY}_LINKER} "${CMAKE_C_COMPILER}")
+execute_process(
+    COMMAND cargo build --manifest-path "${RUST_ROOT}/Cargo.toml" --release --target "${RUST_TARGET}"
+    RESULT_VARIABLE CARGO_RESULT
+)
+if(NOT CARGO_RESULT EQUAL 0)
+    message(FATAL_ERROR "Cargo failed building codeberg_core for ${RUST_TARGET}")
+endif()
+if(NOT EXISTS "${RUST_ARCHIVE}")
+    message(FATAL_ERROR "Cargo succeeded but did not create ${RUST_ARCHIVE}")
+endif()
+add_library(codeberg_core STATIC IMPORTED)
+set_target_properties(codeberg_core PROPERTIES IMPORTED_LOCATION "${RUST_ARCHIVE}")
+add_library(cm_native SHARED "../../nativeInterop/jni/jni_bridge.c")
+target_include_directories(cm_native PRIVATE "${RUST_ROOT}/include")
+target_link_libraries(cm_native PRIVATE codeberg_core log)

@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 // ---- Navigation destinations ----
 sealed interface Screen {
     data class RepoHome(val full: String) : Screen
+    data class Forks(val full: String) : Screen
     data class DirView(val full: String, val path: String) : Screen
     data class FileView(val full: String, val path: String) : Screen
     data class IssueView(val full: String, val number: Int) : Screen
@@ -57,6 +58,9 @@ expect fun hapticTap()
 
 /** Opens the system share sheet with [text]. */
 expect fun shareText(text: String)
+
+/** Counts source lines using the shared Rust core where the target has native support. */
+expect fun nativeLineCount(text: String): Int
 
 // ---- Called BY the hosts ----
 object AppLifecycle {

@@ -65,19 +65,19 @@ fun Avatar(name: String, size: Dp = 44.dp, imageUrl: String? = null) {
         1 -> listOf(BrandColors.green, BrandColors.darkGreen)
         else -> listOf(BrandColors.orange, BrandColors.brown)
     }
-    if (imageUrl != null && imageUrl.isNotBlank()) {
-        RemoteImage(
-            url = imageUrl,
-            contentDescription = name,
-            modifier = Modifier.size(size).clip(CircleShape),
-        )
-        return
-    }
     Box(
         Modifier.size(size).clip(CircleShape).background(Brush.linearGradient(gradient)),
         contentAlignment = Alignment.Center,
     ) {
         Text(name.firstOrNull()?.uppercase() ?: "?", color = Color.White, fontWeight = FontWeight.Bold, fontSize = (size.value * 0.42f).sp)
+        // Keep initials visible under the image so unavailable avatars never leave an empty or broken circle.
+        if (!imageUrl.isNullOrBlank()) {
+            RemoteImage(
+                url = imageUrl,
+                contentDescription = name,
+                modifier = Modifier.fillMaxSize().clip(CircleShape),
+            )
+        }
     }
 }
 

@@ -15,11 +15,15 @@ data class RepoOwner(
     @SerialName("avatar_url") val avatarUrl: String = "",
 )
 
-@Serializable data class UserRef(val login: String = "")
+@Serializable data class UserRef(
+    val login: String = "",
+    @SerialName("avatar_url") val avatarUrl: String = "",
+)
 
 @Serializable
 data class RepoDetail(
     @SerialName("full_name") val fullName: String = "",
+    @SerialName("avatar_url") val avatarUrl: String = "",
     val description: String = "",
     @SerialName("stars_count") val stars: Int = 0,
     @SerialName("forks_count") val forks: Int = 0,
@@ -55,6 +59,7 @@ data class Comment(
 @Serializable
 data class Profile(
     val login: String = "",
+    @SerialName("avatar_url") val avatarUrl: String = "",
     @SerialName("full_name") val fullName: String = "",
     val description: String = "",
     val location: String = "",
@@ -108,6 +113,12 @@ suspend fun ForgejoApi.markRead(id: Long, writeToken: String) =
     send(HttpMethod.Patch, listOf("notifications", "threads", id.toString()), mapOf("to-status" to "read"), writeToken)
 
 suspend fun ForgejoApi.repoDetail(full: String): RepoDetail = parse(getText(repoSegments(full)).body)
+
+/** Lists repositories forked from [full], newest first. */
+suspend fun ForgejoApi.forks(full: String, page: Int): Page<Repo> {
+    val r = getText(repoSegments(full) + "forks", mapOf("page" to page.toString(), "limit" to "30", "sort" to "newest"))
+    return Page(parse(r.body), r.hasMore)
+}
 
 /** Lists a folder on the default branch. An empty [path] is the repository root. */
 suspend fun ForgejoApi.listDir(full: String, path: String): List<Entry> =

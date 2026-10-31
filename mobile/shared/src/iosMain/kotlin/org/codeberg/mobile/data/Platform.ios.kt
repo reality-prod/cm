@@ -5,6 +5,7 @@ package org.codeberg.mobile.data
 
 import androidx.compose.runtime.Composable
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.convert
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
@@ -49,6 +50,7 @@ import platform.UIKit.UIImpactFeedbackStyle
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
+import org.codeberg.mobile.nativecore.codeberg_line_count
 
 /*
  * UNVERIFIED: this whole file was written without a Mac. Compile and test on macOS before any release;
@@ -138,4 +140,11 @@ actual fun hapticTap() {
 actual fun shareText(text: String) {
     val root = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
     root.presentViewController(UIActivityViewController(activityItems = listOf(text), applicationActivities = null), animated = true, completion = null)
+}
+
+actual fun nativeLineCount(text: String): Int {
+    val bytes = text.encodeToByteArray()
+    if (bytes.isEmpty()) return 0
+    val count = bytes.usePinned { pinned -> codeberg_line_count(pinned.addressOf(0), bytes.size.convert()) }
+    return count.toInt()
 }

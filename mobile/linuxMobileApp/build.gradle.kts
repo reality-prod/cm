@@ -7,6 +7,22 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+val rustResourceDir = layout.buildDirectory.dir("generated/rustResources")
+val buildRustLinuxNative = tasks.register<Exec>("buildRustLinuxNative") {
+    inputs.files(
+        fileTree(rootProject.projectDir.parentFile.resolve("rust/core")) { exclude("target/**") },
+        rootProject.projectDir.parentFile.resolve("mobile/shared/src/nativeInterop/jni/jni_bridge.c"),
+        rootProject.projectDir.parentFile.resolve("tools/build-linux-native.sh"),
+    )
+    outputs.dir(rustResourceDir)
+    commandLine(
+        "bash",
+        rootProject.projectDir.parentFile.resolve("tools/build-linux-native.sh").absolutePath,
+        rustResourceDir.get().asFile.absolutePath,
+    )
+    onlyIf { System.getProperty("os.name").lowercase().contains("linux") }
+}
+
 kotlin {
     jvm {
         compilerOptions {
@@ -16,6 +32,7 @@ kotlin {
     
     sourceSets {
         val jvmMain by getting {
+            resources.srcDir(rustResourceDir)
             dependencies {
                 implementation(project(":shared"))
                 implementation(compose.desktop.currentOs)
@@ -23,6 +40,10 @@ kotlin {
             }
         }
     }
+}
+
+tasks.matching { it.name == "jvmProcessResources" }.configureEach {
+    dependsOn(buildRustLinuxNative)
 }
 
 compose.desktop {

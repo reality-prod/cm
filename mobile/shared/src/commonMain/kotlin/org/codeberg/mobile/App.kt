@@ -265,7 +265,11 @@ internal fun RepoCard(repo: Repo, onClick: () -> Unit) {
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Avatar(repo.owner.login.ifBlank { repo.fullName.substringBefore('/') }, 40.dp, imageUrl = repo.owner.avatarUrl.ifBlank { null })
+                Avatar(
+                    repo.owner.login.ifBlank { repo.fullName.substringBefore('/') },
+                    40.dp,
+                    imageUrl = repo.avatarUrl.ifBlank { repo.owner.avatarUrl }.ifBlank { null },
+                )
                 Column {
                     Text(repo.fullName.substringBefore('/'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(repo.fullName.substringAfter('/'), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -343,7 +347,7 @@ private fun ProfileScreen(state: AppState) {
         ) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Avatar(displayName, 56.dp)
+                    Avatar(displayName, 56.dp, imageUrl = profile?.avatarUrl?.ifBlank { null })
                     Column(Modifier.weight(1f)) {
                         Text(displayName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         if (user != null) {
