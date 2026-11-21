@@ -18,9 +18,10 @@ kotlin {
     jvm()
 
     // Compiled only on macOS (Kotlin/Native for Apple needs Xcode). Skipped on Linux.
-    val iosTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64())
+    // No iosX64: Rosetta simulators are legacy, and the Rust core would need a second
+    // x86_64-apple-ios toolchain installed on every contributing machine.
+    val iosTargets = listOf(iosArm64(), iosSimulatorArm64())
     val rustIosTargets = mapOf(
-        "iosX64" to "x86_64-apple-ios",
         "iosArm64" to "aarch64-apple-ios",
         "iosSimulatorArm64" to "aarch64-apple-ios-sim",
     )
@@ -104,7 +105,6 @@ android {
 
 // Build the shared Rust core for each Apple architecture before Kotlin/Native links its framework.
 val rustIosBuilds = mapOf(
-    "iosX64" to "x86_64-apple-ios",
     "iosArm64" to "aarch64-apple-ios",
     "iosSimulatorArm64" to "aarch64-apple-ios-sim",
 ).map { (targetName, rustTarget) ->
