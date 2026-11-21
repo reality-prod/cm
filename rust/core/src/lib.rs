@@ -10,6 +10,11 @@
 
 use core::{ffi::c_char, slice};
 
+// Secret Service storage: Linux phones only (Android keeps its Keystore store in Kotlin,
+// iOS its Keychain store; both would gain nothing from this dependency).
+#[cfg(all(target_os = "linux", not(target_os = "android")))]
+mod secret;
+
 /// Returns the number of display lines in UTF-8 text (empty text has zero lines).
 /// A final newline represents a final empty line, matching Kotlin's split behavior.
 #[no_mangle]

@@ -2,34 +2,97 @@ package org.codeberg.mobile.data
 
 import androidx.compose.runtime.Composable
 import java.io.File
+import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-// 1. Secure storage using a standard file config directory (XDG_CONFIG_HOME)
-actual fun createSecureStore(): SecureStore = JvmSecureStore()
+// Secret storage, Linux phones. Primary: Secret Service (KWallet / GNOME Keyring / KeePassXC /
+// the Flatpak secret portal) reached through the Rust client compiled into libcm_native — nothing
+// to install separately. Fallback for keyring-less systems: AES-GCM file under the XDG config
+// directory with 0600 permissions.
+actual fun createSecureStore(): SecureStore = SecretServiceStore(FileSecretStore())
 
-private class JvmSecureStore : SecureStore {
-    private val configDir = File(System.getProperty("user.home"), ".config/codeberg-mobile").apply { mkdirs() }
-    private val storageFile = File(configDir, "secrets.dat")
-    
-    // TODO(parity): connect to the Secret Service API (libsecret/KWallet) so the key is not static.
-    private val secretKey = SecretKeySpec(ByteArray(32) { 0 }, "AES") 
-
+private class SecretServiceStore(private val fallback: FileSecretStore) : SecureStore {
     override fun put(key: String, value: String) {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, secretKey) }
-        val blob = cipher.iv + cipher.doFinal(value.toByteArray(Charsets.UTF_8))
-        // Write or append your key/value dictionary to storageFile here
+        val saved = runCatching { NativeRust.secretPut(key, value) }.getOrDefault(-2)
+        if (saved != 0) fallback.put(key, value)
     }
 
     override fun get(key: String): String? {
-        // Implement simple key retrieval from your file here
-        return null
+        // Native returns null when the entry is missing or the backend failed; an entry holding
+        // an empty string comes back as "" and must not fall through to the file store.
+        val fromService = runCatching { NativeRust.secretGet(key) }.getOrNull()
+        return fromService ?: fallback.get(key)
     }
 
     override fun remove(key: String) {
-        // Delete key from file
+        runCatching { NativeRust.secretDelete(key) }
+        // Clear any stale copy that was written to the fallback while the daemon was down.
+        fallback.remove(key)
+    }
+}
+
+/**
+ * Last-resort store when no Secret Service daemon is running. The wrapping AES-256-GCM key is
+ * random and persists only in a 0600 file in ~/.config/codeberg-mobile; entries are stored
+ * individually as 12-byte IV + ciphertext so a bad write cannot corrupt the whole store.
+ */
+private class FileSecretStore : SecureStore {
+    private val dir = File(System.getProperty("user.home"), ".config/codeberg-mobile")
+    private val masterKey: ByteArray by lazy { loadOrCreateKey() }
+
+    override fun put(key: String, value: String) {
+        dir.mkdirs()
+        val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(masterKey, "AES"), GCMParameterSpec(128, iv))
+        val blob = iv + cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        writePrivate(entryFile(key), blob)
+    }
+
+    override fun get(key: String): String? {
+        val blob = runCatching { entryFile(key).takeIf { it.isFile }?.readBytes() }.getOrNull() ?: return null
+        if (blob.size < 12 + 16) return null
+        return runCatching {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(masterKey, "AES"), GCMParameterSpec(128, blob, 0, 12))
+            String(cipher.doFinal(blob, 12, blob.size - 12), Charsets.UTF_8)
+        }.getOrNull()
+    }
+
+    override fun remove(key: String) {
+        entryFile(key).delete()
+    }
+
+    private fun entryFile(key: String): File =
+        File(dir, Base64.getUrlEncoder().withoutPadding().encodeToString(key.toByteArray(Charsets.UTF_8)) + ".gcm")
+
+    private fun loadOrCreateKey(): ByteArray {
+        val keyFile = File(dir, "key.bin")
+        keyFile.takeIf { it.length() == 32L }?.readBytes()?.let { return it }
+        val fresh = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        dir.mkdirs()
+        writePrivate(keyFile, fresh)
+        return fresh
+    }
+
+    private fun writePrivate(file: File, bytes: ByteArray) {
+        val path = file.toPath()
+        runCatching {
+            java.nio.file.Files.deleteIfExists(path)
+            java.nio.file.Files.createFile(
+                path,
+                java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                    java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"),
+                ),
+            )
+            java.nio.file.Files.write(path, bytes)
+        }.recoverCatching {
+            // Filesystem without POSIX permission bits (e.g. some sdcard mounts): plain write.
+            java.nio.file.Files.write(path, bytes)
+        }.getOrThrow()
     }
 }
 
@@ -76,6 +139,14 @@ private object NativeRust {
     @JvmStatic external fun compactCount(count: Int): String
     @JvmStatic external fun relativeTime(iso: String, nowEpochSecs: Long): String
     @JvmStatic external fun fileBadge(name: String): String
+
+    // Secret Service (Linux only; non-Linux JNI stubs return -2/-null/-2 so the file store takes over).
+    /** 0 stored, -2 backend unavailable, -3 bad input. */
+    @JvmStatic external fun secretPut(key: String, value: String): Int
+    /** Null when the entry is missing or the backend failed; "" is a stored empty string. */
+    @JvmStatic external fun secretGet(key: String): String?
+    /** 0 deleted or absent, -2 backend unavailable, -3 bad input. */
+    @JvmStatic external fun secretDelete(key: String): Int
 
     private fun loadLibrary(name: String) {
         // Already on the library path (packaged Linux mobile builds)?

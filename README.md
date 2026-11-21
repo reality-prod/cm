@@ -69,6 +69,7 @@ Codeberg Mobile treats authentication credentials as sensitive data and stores t
 
 - **Android:** credentials are encrypted with AES-GCM using a key held in the Android Keystore.
 - **iOS:** credentials are stored in the Keychain, configured for device-only accessibility and protection while the device is locked.
+- **Linux phones (postmarketOS, Phosh, Plasma Mobile):** credentials go to the freedesktop.org Secret Service through a pure-Rust D-Bus client compiled straight into the app's native library — no `libsecret` or other package needs to be installed first. Whatever provider the system runs works: KWallet, GNOME Keyring, KeePassXC, or the Flatpak secret portal in sandboxed builds. On systems with no Secret Service daemon at all, credentials fall back to AES-256-GCM-encrypted files under `~/.config/codeberg-mobile/` with owner-only (0600) permissions.
 - **Biometric authentication:** fingerprint and Face ID unlock are supported where the device provides them.
 - **Device authentication:** falls back to device credential authentication (PIN, pattern, or password) where available.
 

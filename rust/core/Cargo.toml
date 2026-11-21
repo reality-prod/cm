@@ -8,6 +8,14 @@ license = "AGPL-3.0-or-later"
 name = "codeberg_core"
 crate-type = ["staticlib"]
 
+[target.'cfg(all(target_os = "linux", not(target_os = "android")))'.dependencies]
+# Secret Service client using the pure-Rust D-Bus stack (zbus, async-io reactor), so it
+# statically links into the JNI library: no libsecret or other C packages needed on the
+# build host. At runtime the device only needs any Secret Service provider (KWallet, GNOME
+# Keyring, KeePassXC); Flatpak's secret portal fills the role inside sandboxes.
+keyring = { version = "3", default-features = false, features = ["async-secret-service", "async-io"] }
+secret-service = { version = "4", default-features = false, features = ["rt-async-io-crypto-rust"] }
+
 [profile.release]
 lto = true
 codegen-units = 1

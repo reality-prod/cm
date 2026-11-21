@@ -39,6 +39,15 @@ size_t codeberg_relative_time(const char *iso, size_t len, int64_t now_epoch_sec
 /* File-type badge for a file name ("KT" for "Main.kt"); 0 when there is none. */
 size_t codeberg_file_badge(const char *name, size_t len, char *out, size_t cap);
 
+/* Secret Service storage (freedesktop.org), Linux only: talks to KWallet / GNOME Keyring /
+ * KeePassXC via a statically-linked pure-Rust D-Bus client. Status codes:
+ *   0 = ok, -1 = no such entry, -2 = backend failure, -3 = bad input, -5 = buffer too small. */
+#if defined(__linux__) && !defined(__ANDROID__)
+int codeberg_secret_put(const char *service, size_t service_len, const char *key, size_t key_len, const char *value, size_t value_len);
+int codeberg_secret_get(const char *service, size_t service_len, const char *key, size_t key_len, char *out, size_t cap);
+int codeberg_secret_delete(const char *service, size_t service_len, const char *key, size_t key_len);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

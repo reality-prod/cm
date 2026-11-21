@@ -94,3 +94,71 @@ Java_org_codeberg_mobile_data_NativeRust_fileBadge(JNIEnv *env, jclass klass, js
     if (n == 0) return (*env)->NewStringUTF(env, "\xe2\x89\xa3"); /* ≡ for extension-less */
     return (*env)->NewStringUTF(env, buf);
 }
+
+/* Secret Service storage: Linux phones only (Android keeps its Keystore store in Kotlin). */
+#if defined(__linux__) && !defined(__ANDROID__)
+static const char SECRET_SERVICE_UTF[] = "org.codeberg.mobile";
+
+/* 0 = stored; negative codes come straight from codeberg_secret_put. */
+JNIEXPORT jint JNICALL
+Java_org_codeberg_mobile_data_NativeRust_secretPut(JNIEnv *env, jclass klass, jstring key, jstring value) {
+    (void)klass;
+    if (key == NULL || value == NULL) return -3;
+    const char *key_utf = (*env)->GetStringUTFChars(env, key, NULL);
+    const char *value_utf = (*env)->GetStringUTFChars(env, value, NULL);
+    if (key_utf == NULL || value_utf == NULL) return -3;
+    jint rc = codeberg_secret_put(
+        SECRET_SERVICE_UTF, sizeof SECRET_SERVICE_UTF - 1,
+        key_utf, (size_t)(*env)->GetStringUTFLength(env, key),
+        value_utf, (size_t)(*env)->GetStringUTFLength(env, value)
+    );
+    (*env)->ReleaseStringUTFChars(env, value, value_utf);
+    (*env)->ReleaseStringUTFChars(env, key, key_utf);
+    return rc;
+}
+
+/* The stored value, or NULL when it is missing or the Secret Service backend failed. */
+JNIEXPORT jstring JNICALL
+Java_org_codeberg_mobile_data_NativeRust_secretGet(JNIEnv *env, jclass klass, jstring key) {
+    (void)klass;
+    if (key == NULL) return NULL;
+    const char *key_utf = (*env)->GetStringUTFChars(env, key, NULL);
+    if (key_utf == NULL) return NULL;
+    char buf[8192];
+    jint n = codeberg_secret_get(SECRET_SERVICE_UTF, sizeof SECRET_SERVICE_UTF - 1, key_utf, (size_t)(*env)->GetStringUTFLength(env, key), buf, sizeof buf);
+    (*env)->ReleaseStringUTFChars(env, key, key_utf);
+    if (n < 0) return NULL;
+    return (*env)->NewStringUTF(env, buf);
+}
+
+/* 0 = gone (a missing secret also counts as gone). */
+JNIEXPORT jint JNICALL
+Java_org_codeberg_mobile_data_NativeRust_secretDelete(JNIEnv *env, jclass klass, jstring key) {
+    (void)klass;
+    if (key == NULL) return -3;
+    const char *key_utf = (*env)->GetStringUTFChars(env, key, NULL);
+    if (key_utf == NULL) return -3;
+    jint rc = codeberg_secret_delete(SECRET_SERVICE_UTF, sizeof SECRET_SERVICE_UTF - 1, key_utf, (size_t)(*env)->GetStringUTFLength(env, key));
+    (*env)->ReleaseStringUTFChars(env, key, key_utf);
+    return rc;
+}
+#else
+/* Non-Linux JVM builds (macOS dev runs): no Secret Service; callers fall back to the file store. */
+JNIEXPORT jint JNICALL
+Java_org_codeberg_mobile_data_NativeRust_secretPut(JNIEnv *env, jclass klass, jstring key, jstring value) {
+    (void)env; (void)klass; (void)key; (void)value;
+    return -2;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_codeberg_mobile_data_NativeRust_secretGet(JNIEnv *env, jclass klass, jstring key) {
+    (void)env; (void)klass; (void)key;
+    return NULL;
+}
+
+JNIEXPORT jint JNICALL
+Java_org_codeberg_mobile_data_NativeRust_secretDelete(JNIEnv *env, jclass klass, jstring key) {
+    (void)env; (void)klass; (void)key;
+    return -2;
+}
+#endif
