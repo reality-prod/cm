@@ -50,7 +50,13 @@ import platform.UIKit.UIImpactFeedbackStyle
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
+import org.codeberg.mobile.nativecore.CbTextStats
+import org.codeberg.mobile.nativecore.codeberg_compact_count
+import org.codeberg.mobile.nativecore.codeberg_file_badge
+import org.codeberg.mobile.nativecore.codeberg_format_size
 import org.codeberg.mobile.nativecore.codeberg_line_count
+import org.codeberg.mobile.nativecore.codeberg_relative_time
+import org.codeberg.mobile.nativecore.codeberg_text_stats
 
 /*
  * UNVERIFIED: this whole file was written without a Mac. Compile and test on macOS before any release;
@@ -147,4 +153,66 @@ actual fun nativeLineCount(text: String): Int {
     if (bytes.isEmpty()) return 0
     val count = bytes.usePinned { pinned -> codeberg_line_count(pinned.addressOf(0), bytes.size.convert()) }
     return count.toInt()
+}
+
+actual fun nativeTextStats(text: String): TextStats = memScoped {
+    val bytes = text.encodeToByteArray()
+    if (bytes.isEmpty()) return@memScoped TextStats(0, 0, 0, 0, 0, binary = false)
+    val stats = alloc<CbTextStats>()
+    bytes.usePinned { pinned -> codeberg_text_stats(pinned.addressOf(0), bytes.size.convert(), stats.ptr) }
+    TextStats(
+        totalLines = stats.total_lines.toInt(),
+        blankLines = stats.blank_lines.toInt(),
+        words = stats.words.toInt(),
+        chars = stats.chars.toInt(),
+        bytes = stats.bytes.toInt(),
+        binary = stats.binary != 0.toUByte(),
+    )
+}
+
+actual fun nativeFormatSize(bytes: Long): String = memScoped {
+    val buf = ByteArray(32)
+    buf.usePinned { pinned ->
+        val written = codeberg_format_size(bytes.convert(), pinned.addressOf(0), buf.size.convert())
+        if (written == 0uL) "" else buf.decodeToString(0, written.toInt())
+    }
+}
+
+actual fun nativeCompactCount(count: Int): String = memScoped {
+    val buf = ByteArray(24)
+    buf.usePinned { pinned ->
+        val written = codeberg_compact_count(count.convert(), pinned.addressOf(0), buf.size.convert())
+        if (written == 0uL) "" else buf.decodeToString(0, written.toInt())
+    }
+}
+
+actual fun nativeRelativeTime(iso8601: String): String = memScoped {
+    val bytes = iso8601.encodeToByteArray()
+    if (bytes.isEmpty()) return@memScoped ""
+    val buf = ByteArray(32)
+    val now = platform.posix.time(null).toLong()
+    val written = buf.usePinned { outPinned ->
+        bytes.usePinned { inPinned ->
+            codeberg_relative_time(
+                inPinned.addressOf(0),
+                bytes.size.convert(),
+                now,
+                outPinned.addressOf(0),
+                buf.size.convert(),
+            )
+        }
+    }
+    if (written == 0uL) "" else buf.decodeToString(0, written.toInt())
+}
+
+actual fun nativeFileBadge(name: String): String = memScoped {
+    val bytes = name.encodeToByteArray()
+    if (bytes.isEmpty()) return@memScoped "\u2263"
+    val buf = ByteArray(8)
+    val written = buf.usePinned { outPinned ->
+        bytes.usePinned { inPinned ->
+            codeberg_file_badge(inPinned.addressOf(0), bytes.size.convert(), outPinned.addressOf(0), buf.size.convert())
+        }
+    }
+    if (written == 0uL) "\u2263" else buf.decodeToString(0, written.toInt())
 }

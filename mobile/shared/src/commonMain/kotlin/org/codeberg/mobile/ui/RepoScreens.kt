@@ -49,7 +49,10 @@ import org.codeberg.mobile.data.Entry
 import org.codeberg.mobile.data.RepoDetail
 import org.codeberg.mobile.data.Screen
 import org.codeberg.mobile.data.listDir
-import org.codeberg.mobile.data.nativeLineCount
+import org.codeberg.mobile.data.nativeCompactCount
+import org.codeberg.mobile.data.nativeFileBadge
+import org.codeberg.mobile.data.nativeFormatSize
+import org.codeberg.mobile.data.nativeTextStats
 import org.codeberg.mobile.data.rawFile
 import org.codeberg.mobile.data.repoDetail
 import org.codeberg.mobile.data.safeHttpUrl
@@ -145,11 +148,11 @@ private fun RepoHeader(state: AppState, full: String) {
         }
         detail?.let { d ->
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip("\u2605 ${compact(d.stars)}", tone = ChipTone.Yellow)
+                Chip("\u2605 ${nativeCompactCount(d.stars)}", tone = ChipTone.Yellow)
                 Surface(onClick = { state.push(Screen.Forks(full)) }, shape = RoundedCornerShape(50), color = Color.Transparent) {
-                    Chip("${compact(d.forks)} forks · view", tone = ChipTone.Blue)
+                    Chip("${nativeCompactCount(d.forks)} forks · view", tone = ChipTone.Blue)
                 }
-                Chip("${compact(d.openIssues)} open issues", tone = ChipTone.Green)
+                Chip("${nativeCompactCount(d.openIssues)} open issues", tone = ChipTone.Green)
                 if (d.defaultBranch.isNotBlank()) Chip(d.defaultBranch, tone = ChipTone.Neutral)
                 if (d.language.isNotBlank()) Chip(d.language, tone = ChipTone.Green)
                 if (d.archived) Chip("archived", tone = ChipTone.Orange)
@@ -212,10 +215,10 @@ private fun EntryCard(entries: List<Entry>, onClick: (Entry) -> Unit) {
                 val dir = e.type == "dir"
                 Surface(onClick = { onClick(e) }, color = Color.Transparent) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconTile(if (dir) "/" else e.name.substringAfterLast('.', "").take(3).uppercase().ifEmpty { "\u2263" }, dir)
+                        IconTile(if (dir) "/" else nativeFileBadge(e.name), dir)
                         Spacer(Modifier.width(14.dp))
                         Text(e.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (!dir && e.size > 0) Text(size(e.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (!dir && e.size > 0) Text(nativeFormatSize(e.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (dir) Text("\u203A", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 20.sp)
                     }
                 }
@@ -225,25 +228,20 @@ private fun EntryCard(entries: List<Entry>, onClick: (Entry) -> Unit) {
     }
 }
 
-private fun size(bytes: Long) = when {
-    bytes < 1024 -> "$bytes B"
-    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-    else -> "${bytes / (1024 * 1024)} MB"
-}
-
 @Composable
 private fun CodeView(text: String) {
     val s = MaterialTheme.colorScheme
+    // Counts, "characters", and binary detection all come from the shared Rust core (see rust/core).
+    val stats = remember(text) { nativeTextStats(text) }
     when {
-        text.take(8000).contains('\u0000') -> Notice("Binary file. Preview isn't available.")
-        text.length > 2_000_000 -> Notice("File is too large to preview.")
+        stats.binary -> Notice("Binary file. Preview isn't available.")
+        stats.bytes > 2_000_000 -> Notice("File is too large to preview.")
         else -> {
             val lines = remember(text) { if (text.isEmpty()) emptyList() else text.split('\n') }
-            val lineCount = remember(text) { nativeLineCount(text) }
             val mono = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
             Column(Modifier.fillMaxSize()) {
                 Text(
-                    "$lineCount lines · ${text.length} characters",
+                    "${stats.totalLines} lines · ${stats.chars} characters",
                     Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 8.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = s.onSurfaceVariant,

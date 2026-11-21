@@ -47,10 +47,13 @@ import org.codeberg.mobile.data.ThemeMode
 import org.codeberg.mobile.data.errorText
 import org.codeberg.mobile.data.hostOf
 import org.codeberg.mobile.data.safeHttpUrl
-
-fun compact(n: Int): String = if (n >= 1000) "${n / 1000}.${(n % 1000) / 100}k" else n.toString()
+import org.codeberg.mobile.data.nativeRelativeTime
 
 enum class ChipTone { Neutral, Blue, Green, Yellow, Orange }
+
+/** Relative time ("2d ago") from the shared Rust core, remembered per timestamp. */
+@Composable
+fun relativeTime(iso: String): String = remember(iso) { nativeRelativeTime(iso) }
 
 /**
  * A round avatar. Shows the account's picture when it has one (Codeberg avatars load automatically); otherwise the

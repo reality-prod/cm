@@ -1,3 +1,5 @@
 headers = codeberg_core.h
 headerFilter = codeberg_core.h
 package = org.codeberg.mobile.nativecore
+# These take raw byte buffers and out-parameters, not NUL-terminated strings.
+noStringConversion = codeberg_line_count codeberg_text_stats codeberg_format_size codeberg_compact_count codeberg_relative_time codeberg_file_badge

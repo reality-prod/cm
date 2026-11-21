@@ -50,6 +50,7 @@ import org.codeberg.mobile.data.myRepos
 import org.codeberg.mobile.data.notifications
 import org.codeberg.mobile.ui.Chip
 import org.codeberg.mobile.ui.ChipTone
+import org.codeberg.mobile.ui.relativeTime
 import org.codeberg.mobile.ui.CodebergMark
 import org.codeberg.mobile.ui.PillTabs
 import org.codeberg.mobile.ui.SkeletonRows
@@ -103,7 +104,10 @@ internal fun <T> PagedList(key: Any, fetch: suspend (Int) -> Page<T>, empty: Str
                     Text(error ?: "", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                     OutlinedButton(onClick = { scope.launch { load(page) } }) { Text("Retry") }
                 }
-                rows.isEmpty() -> Text(empty, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                rows.isEmpty() -> Column(Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CodebergMark(56.dp)
+                    Text(empty, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                }
                 hasMore -> LaunchedEffect(page) { load(page) }
             }
         }
@@ -175,7 +179,7 @@ private fun NotifCard(n: Notif, onOpen: () -> Unit, onMarkRead: () -> Unit) {
             }
             Text(n.subject.title, style = MaterialTheme.typography.titleMedium, fontWeight = if (n.unread) FontWeight.Bold else FontWeight.Normal, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(n.updatedAt.substringBefore('T'), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(relativeTime(n.updatedAt), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (n.unread) TextButton(onClick = onMarkRead) { Text("Mark read") }
             }
         }

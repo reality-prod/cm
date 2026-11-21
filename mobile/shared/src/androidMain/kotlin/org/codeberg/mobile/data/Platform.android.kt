@@ -127,7 +127,29 @@ actual fun shareText(text: String) {
 private object NativeRust {
     init { System.loadLibrary("cm_native") }
     @JvmStatic external fun countLines(text: String): Int
+    /** Fills stats with {lines, blankLines, words, chars, binary}; returns the byte count. */
+    @JvmStatic external fun textStats(text: String, stats: IntArray): Int
+    @JvmStatic external fun formatSize(bytes: Long): String
+    @JvmStatic external fun compactCount(count: Int): String
+    @JvmStatic external fun relativeTime(iso: String, nowEpochSecs: Long): String
+    @JvmStatic external fun fileBadge(name: String): String
 }
 
-actual fun nativeLineCount(text: String): Int = runCatching { NativeRust.countLines(text) }
-    .getOrElse { if (text.isEmpty()) 0 else text.count { it == '\n' } + 1 }
+actual fun nativeLineCount(text: String): Int = runCatching { NativeRust.countLines(text) }.getOrDefault(0)
+
+actual fun nativeTextStats(text: String): TextStats {
+    val out = IntArray(5)
+    val bytes = runCatching { NativeRust.textStats(text, out) }.getOrDefault(0)
+    return TextStats(out[0], out[1], out[2], out[3], bytes, out[4] != 0)
+}
+
+actual fun nativeFormatSize(bytes: Long): String = runCatching { NativeRust.formatSize(bytes) }.getOrDefault("")
+
+private fun nowEpochSecs(): Long = System.currentTimeMillis() / 1000
+
+actual fun nativeCompactCount(count: Int): String = runCatching { NativeRust.compactCount(count) }.getOrDefault("")
+
+actual fun nativeRelativeTime(iso8601: String): String =
+    runCatching { NativeRust.relativeTime(iso8601, nowEpochSecs()) }.getOrDefault("")
+
+actual fun nativeFileBadge(name: String): String = runCatching { NativeRust.fileBadge(name) }.getOrDefault("\u2263")

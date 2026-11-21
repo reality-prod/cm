@@ -117,7 +117,7 @@ private fun IssueCard(issue: Issue, onClick: () -> Unit) {
             Text(issue.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             val meta = buildString {
                 append(issue.user.login)
-                append("  \u00B7  ${issue.createdAt.substringBefore('T')}")
+                append("  \u00B7  ${relativeTime(issue.createdAt)}")
                 if (issue.comments > 0) append("  \u00B7  ${issue.comments} comments")
             }
             Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -141,7 +141,7 @@ internal fun IssueScreen(state: AppState, full: String, number: Int, link: (Stri
                             Text(issue.title, style = MaterialTheme.typography.headlineMedium)
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Avatar(issue.user.login, 28.dp, imageUrl = issue.user.avatarUrl.ifBlank { null })
-                                Text("${issue.user.login}  \u00B7  ${issue.createdAt.substringBefore('T')}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${issue.user.login}  \u00B7  ${relativeTime(issue.createdAt)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (issue.body.isBlank()) Text("No description.", color = MaterialTheme.colorScheme.onSurfaceVariant) else Markdown(issue.body, link)
                         }
@@ -160,7 +160,7 @@ private fun CommentCard(c: Comment, link: (String) -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Avatar(c.user.login, 28.dp, imageUrl = c.user.avatarUrl.ifBlank { null })
                 Text(c.user.login, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
-                Text(c.createdAt.substringBefore('T'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(relativeTime(c.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Markdown(c.body, link)
         }

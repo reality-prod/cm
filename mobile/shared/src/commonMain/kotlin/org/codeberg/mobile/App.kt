@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.codeberg.mobile.data.AppState
 import org.codeberg.mobile.data.Bridge
 import org.codeberg.mobile.data.PlatformBackHandler
@@ -60,7 +61,12 @@ import org.codeberg.mobile.data.createSecureStore
 import org.codeberg.mobile.data.hapticTap
 import org.codeberg.mobile.data.setSecureWindow
 import org.codeberg.mobile.ui.Avatar
+import org.codeberg.mobile.ui.AmbientGlow
+import org.codeberg.mobile.ui.CodebergMark
+import org.codeberg.mobile.ui.entrance
+import org.codeberg.mobile.ui.languageColor
 import org.codeberg.mobile.ui.pressScale
+import org.codeberg.mobile.ui.relativeTime
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.fadeOut
@@ -69,6 +75,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.compose.setSingletonImageLoaderFactory
@@ -132,6 +142,7 @@ private fun Shell(state: AppState) {
     val top = state.stack.lastOrNull()
     PlatformBackHandler(enabled = top != null) { state.pop() }
     Box(Modifier.fillMaxSize()) {
+        if (top == null) AmbientGlow(Modifier.align(Alignment.TopCenter))
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Detail pages slide in from the right and out to the right; going back reverses the motion.
             AnimatedContent(
@@ -236,7 +247,9 @@ private fun ExploreScreen(state: AppState) {
             }
         }
         itemsIndexed(state.repos) { i, repo ->
-            RepoCard(repo) { state.push(Screen.RepoHome(repo.fullName)) }
+            Box(Modifier.entrance(i)) {
+                RepoCard(repo) { hapticTap(); state.push(Screen.RepoHome(repo.fullName)) }
+            }
             if (i == state.repos.lastIndex && state.hasMore) LaunchedEffect(state.repos.size) { state.loadMore() }
         }
         item {
@@ -246,7 +259,24 @@ private fun ExploreScreen(state: AppState) {
                     Text(state.listError ?: "", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                     OutlinedButton(onClick = { state.search(q) }) { Text("Retry") }
                 }
-                state.repos.isEmpty() -> Text("No repositories found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                state.repos.isEmpty() -> if (q.isBlank()) {
+                    // Cold Explore: the brand mark and a friendly line instead of a bare sentence.
+                    Column(Modifier.fillMaxWidth().padding(top = 48.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CodebergMark(72.dp)
+                        Text("Fresh from Codeberg", style = MaterialTheme.typography.titleMedium)
+                        Text("Trending repositories will appear here", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                    }
+                } else {
+                    Column(Modifier.fillMaxWidth().padding(top = 32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("\u2315", fontSize = 34.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Nothing matched \u201C$q\u201D", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Try a different name or topic",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }
@@ -283,11 +313,14 @@ internal fun RepoCard(repo: Repo, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Chip("\u2605 ${repo.stars}", tone = ChipTone.Yellow)
-                if (repo.language.isNotBlank()) Chip(repo.language, tone = ChipTone.Green)
+                if (repo.language.isNotBlank()) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(languageColor(repo.language)))
+                    Chip(repo.language, tone = ChipTone.Green)
+                }
                 if (repo.isPrivate) Chip("private", tone = ChipTone.Orange)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    repo.updatedAt.substringBefore('T'),
+                    relativeTime(repo.updatedAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -435,9 +468,19 @@ private fun FloatingNav(selected: Tab, onSelect: (Tab) -> Unit, modifier: Modifi
         Row(Modifier.padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Tab.entries.forEach { t ->
                 val on = t == selected
+                val interaction = remember { MutableInteractionSource() }
+                val bounce by animateFloatAsState(if (on) 1f else 0.96f, spring(dampingRatio = 0.5f, stiffness = 380f), label = "nav-bounce")
                 Box(
-                    Modifier.clip(CircleShape).background(if (on) scheme.primary else Color.Transparent)
-                        .clickable { hapticTap(); onSelect(t) }.padding(horizontal = 18.dp, vertical = 11.dp),
+                    Modifier.graphicsLayer { scaleX = bounce; scaleY = bounce }
+                        .pressScale(interaction)
+                        .clip(CircleShape).background(
+                            animateColorAsState(
+                                if (on) scheme.primary else Color.Transparent,
+                                tween(220), label = "nav-color",
+                            ).value,
+                        )
+                        .clickable(interactionSource = interaction, indication = null) { hapticTap(); onSelect(t) }
+                        .padding(horizontal = 18.dp, vertical = 11.dp),
                 ) {
                     Text(
                         t.label, style = MaterialTheme.typography.labelLarge,

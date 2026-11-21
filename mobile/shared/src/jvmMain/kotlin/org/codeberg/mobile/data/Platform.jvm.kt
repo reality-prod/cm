@@ -69,23 +69,54 @@ actual fun shareText(text: String) {
 }
 
 private object NativeRust {
-    init {
-        runCatching {
-            val arch = when (System.getProperty("os.arch")) {
-                "aarch64", "arm64" -> "linux-arm64"
-                else -> "linux-x64"
-            }
-            val library = NativeRust::class.java.getResourceAsStream("/natives/$arch/libcm_native.so")
-                ?: return@runCatching
-            val path = java.nio.file.Files.createTempFile("cm-native-", ".so")
-            library.use { input -> java.nio.file.Files.copy(input, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
-            path.toFile().deleteOnExit()
-            System.load(path.toAbsolutePath().toString())
-        }
-    }
+    init { loadLibrary("cm_native") }
     @JvmStatic external fun countLines(text: String): Int
+    /** Fills stats with {lines, blankLines, words, chars, binary}; returns the byte count. */
+    @JvmStatic external fun textStats(text: String, stats: IntArray): Int
+    @JvmStatic external fun formatSize(bytes: Long): String
+    @JvmStatic external fun compactCount(count: Int): String
+    @JvmStatic external fun relativeTime(iso: String, nowEpochSecs: Long): String
+    @JvmStatic external fun fileBadge(name: String): String
+
+    private fun loadLibrary(name: String) {
+        // Already on the library path (packaged desktop builds)?
+        runCatching { System.loadLibrary(name); return }
+        // Otherwise extract a bundled native for this OS/arch from the classpath.
+        val resourceArch = when (Record.osArch) {
+            "aarch64", "arm64" -> if (Record.onLinux) "linux-arm64" else "darwin-arm64"
+            else -> if (Record.onLinux) "linux-x64" else "darwin-x64"
+        }
+        val suffix = if (Record.onLinux) "so" else "dylib"
+        val library = NativeRust::class.java.getResourceAsStream("/natives/$resourceArch/lib$name.$suffix")
+            ?: return // No engine for this platform; callers degrade to empty results.
+        val path = java.nio.file.Files.createTempFile("cm-native-", ".$suffix")
+        library.use { input -> java.nio.file.Files.copy(input, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
+        path.toFile().deleteOnExit()
+        System.load(path.toAbsolutePath().toString())
+    }
 }
 
-actual fun nativeLineCount(text: String): Int = runCatching { NativeRust.countLines(text) }
-    .getOrElse { if (text.isEmpty()) 0 else text.count { it == '\n' } + 1 }
+private object Record {
+    val osArch: String get() = System.getProperty("os.arch") ?: ""
+    val onLinux: Boolean = System.getProperty("os.name")?.lowercase()?.contains("linux") == true
+}
+
+actual fun nativeLineCount(text: String): Int = runCatching { NativeRust.countLines(text) }.getOrDefault(0)
+
+actual fun nativeTextStats(text: String): TextStats {
+    val out = IntArray(5)
+    val bytes = runCatching { NativeRust.textStats(text, out) }.getOrDefault(0)
+    return TextStats(out[0], out[1], out[2], out[3], bytes, out[4] != 0)
+}
+
+actual fun nativeFormatSize(bytes: Long): String = runCatching { NativeRust.formatSize(bytes) }.getOrDefault("")
+
+private fun nowEpochSecs(): Long = System.currentTimeMillis() / 1000
+
+actual fun nativeCompactCount(count: Int): String = runCatching { NativeRust.compactCount(count) }.getOrDefault("")
+
+actual fun nativeRelativeTime(iso8601: String): String =
+    runCatching { NativeRust.relativeTime(iso8601, nowEpochSecs()) }.getOrDefault("")
+
+actual fun nativeFileBadge(name: String): String = runCatching { NativeRust.fileBadge(name) }.getOrDefault("\u2263")
 

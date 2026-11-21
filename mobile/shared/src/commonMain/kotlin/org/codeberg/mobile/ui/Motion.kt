@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package org.codeberg.mobile.ui
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,8 +16,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -81,4 +89,47 @@ fun SkeletonRows(count: Int = 4, modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+/** Fades and slides an element in once it is first composed; [index] staggers rows in a list. */
+fun Modifier.entrance(index: Int = 0): Modifier = composed {
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val progress by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 320,
+            delayMillis = (index * 45).coerceAtMost(300),
+            easing = FastOutSlowInEasing,
+        ),
+        label = "entrance",
+    )
+    graphicsLayer {
+        alpha = progress
+        translationY = (1f - progress) * 24f
+    }
+}
+
+/** A soft brand-blue wash fading down from the top edge, behind a screen's content. */
+@Composable
+fun AmbientGlow(modifier: Modifier = Modifier) {
+    val s = MaterialTheme.colorScheme
+    val isDark = s.background.luminance() < 0.5f
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(320.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(s.primary.copy(alpha = if (isDark) 0.14f else 0.07f), Color.Transparent),
+                ),
+            ),
+    )
+}
+
+/** Deterministic language colour: same language always gets the same hue. */
+fun languageColor(language: String): Color {
+    if (language.isBlank()) return Color(0xFF8A98A3)
+    val hue = ((language.hashCode() and 0x7FFFFFFF) % 360).toFloat()
+    return Color.hsl(hue, saturation = 0.55f, lightness = 0.6f)
 }

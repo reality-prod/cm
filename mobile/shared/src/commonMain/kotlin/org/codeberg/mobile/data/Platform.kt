@@ -59,9 +59,6 @@ expect fun hapticTap()
 /** Opens the system share sheet with [text]. */
 expect fun shareText(text: String)
 
-/** Counts source lines using the shared Rust core where the target has native support. */
-expect fun nativeLineCount(text: String): Int
-
 // ---- Called BY the hosts ----
 object AppLifecycle {
     var onBackground: () -> Unit = {}
