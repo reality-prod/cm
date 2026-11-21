@@ -14,7 +14,7 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
-    // ✅ Added the standard JVM target for desktop support
+    // JVM target for Linux phones (postmarketOS, Phosh, Plasma Mobile) via linuxMobileApp.
     jvm()
 
     // Compiled only on macOS (Kotlin/Native for Apple needs Xcode). Skipped on Linux.

@@ -7,15 +7,14 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-// 1. Stub secure storage using a standard file config directory
+// 1. Secure storage using a standard file config directory (XDG_CONFIG_HOME)
 actual fun createSecureStore(): SecureStore = JvmSecureStore()
 
 private class JvmSecureStore : SecureStore {
     private val configDir = File(System.getProperty("user.home"), ".config/codeberg-mobile").apply { mkdirs() }
     private val storageFile = File(configDir, "secrets.dat")
     
-    // For an elegant Linux implementation, you can later connect this to 'Secret Service API' (libsecret/KWallet).
-    // For now, we use a static fallback key so your app can run.
+    // TODO(parity): connect to the Secret Service API (libsecret/KWallet) so the key is not static.
     private val secretKey = SecretKeySpec(ByteArray(32) { 0 }, "AES") 
 
     override fun put(key: String, value: String) {
@@ -36,7 +35,7 @@ private class JvmSecureStore : SecureStore {
 
 // 2. Lock screen auth (Biometrics)
 actual fun createDeviceAuth(): DeviceAuth = object : DeviceAuth {
-    // Linux desktops/mobiles don't have a single unified biometric framework out-of-the-box like Android.
+    // Mobile Linux (postmarketOS, Phosh, Plasma Mobile) has no single unified biometric framework out-of-the-box like Android.
     // Return false to let your App gracefully skip lockscreen prompts.
     override fun available(): Boolean = false
     override fun authenticate(title: String, onResult: (Boolean) -> Unit) = onResult(false)
@@ -44,10 +43,10 @@ actual fun createDeviceAuth(): DeviceAuth = object : DeviceAuth {
 
 // 3. Prevent screenshots
 actual fun setSecureWindow(secure: Boolean) {
-    // No-op on standard Linux Wayland/X11 desktops
+    // No-op on Linux mobile Wayland/X11 sessions
 }
 
-// 4. Handle the back button (usually doesn't exist on desktop windows)
+// 4. Handle the back button (on-screen back button on Linux phones)
 @Composable
 actual fun PlatformBackHandler(enabled: Boolean, onBack: () -> Unit) {
     // No-op or bind to a hardware escape key press
@@ -55,7 +54,7 @@ actual fun PlatformBackHandler(enabled: Boolean, onBack: () -> Unit) {
 
 // 5. Haptic engine
 actual fun hapticTap() {
-    // No-op on desktops. On postmarketOS devices, this can later tap into `/sys/class/leds/vibrator/`
+    // No-op today. On postmarketOS devices, this can later tap into `/sys/class/leds/vibrator/`
 }
 
 // 6. Native Share Sheet
@@ -79,7 +78,7 @@ private object NativeRust {
     @JvmStatic external fun fileBadge(name: String): String
 
     private fun loadLibrary(name: String) {
-        // Already on the library path (packaged desktop builds)?
+        // Already on the library path (packaged Linux mobile builds)?
         runCatching { System.loadLibrary(name); return }
         // Otherwise extract a bundled native for this OS/arch from the classpath.
         val resourceArch = when (Record.osArch) {

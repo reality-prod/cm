@@ -80,7 +80,7 @@ Security properties depend on the platform, the device's configuration, and the 
 |---|---|
 | Android | Kotlin Multiplatform / Compose Multiplatform |
 | iOS | Kotlin Multiplatform / Compose Multiplatform |
-| Linux Mobile | Compose Desktop JVM package for x86_64 and AArch64 Linux |
+| Linux Mobile | Compose Multiplatform (JVM) for Linux phones — postmarketOS, Phosh, Plasma Mobile |
 
 **Minimum Android SDK:** API 26 (Android 8.0).
 
@@ -94,7 +94,7 @@ Release signing credentials must be configured locally or through a secure build
 
 ### Shared Rust core
 
-The small `rust/core` library provides an allocation-free source line counter used by the file viewer. Kotlin/Native links the Rust static library directly on iOS; Android and Linux use a thin C JNI adapter, with the same Rust implementation underneath. If native loading is unavailable, the viewer falls back to Kotlin line counting.
+The small `rust/core` library is the engine for fast, pure computation shared by every target: text statistics (lines, words, characters, bytes, binary detection), file-size and compact-count formatting, relative timestamps for Forgejo RFC 3339 dates, file-type badges, and source line counting — all allocation-free. Kotlin never duplicates these algorithms: iOS links the Rust static library directly via Kotlin/Native cinterop, Android and Linux phones use a thin C JNI adapter over the same implementation. Where the native engine is unavailable, callers degrade to an empty result rather than falling back to re-implemented Kotlin logic.
 
 Install Rust with `rustup`, then add the targets for the platforms you build:
 
