@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # One entry point for the monorepo. Mobile only: Kotlin Multiplatform for Android and iOS.
-.PHONY: help sync check icons android release test ios ipaI I  linux
+.PHONY: help sync check icons android release test ios ipa linux flatpak
 
 help:  ## List targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/'
@@ -28,6 +28,13 @@ ios:  ## macOS only: generate the Xcode project and open it
 
 ipa:  ## macOS only: unsigned IPA for AltStore -> dist/CodebergMobile.ipa
 	sh tools/build-ipa.sh
+
 linux: ## Build for Linux Mobile platforms, e.g Ubuntu Touch, Nura etc etc.
+	cd rust/core && cargo build --release
 	cd mobile && ./gradlew :linuxMobileApp:createDistributable
-	
+	cp rust/core/target/release/lib*.so mobile/linuxMobileApp/build/compose/binaries/main/app/codeberg-mobile/lib/app/
+
+flatpak: linux ## Build Linux distributable and package into dist/CodebergMobile.flatpak
+	mkdir -p dist
+	flatpak-builder --repo=repo --force-clean build-dir org.codeberg.Mobile.yml
+	flatpak build-bundle repo dist/CodebergMobile.flatpak org.codeberg.Mobile
