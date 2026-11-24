@@ -30,9 +30,9 @@ ipa:  ## macOS only: unsigned IPA for AltStore -> dist/CodebergMobile.ipa
 	sh tools/build-ipa.sh
 
 linux: ## Build for Linux Mobile platforms, e.g Ubuntu Touch, Nura etc etc.
-	cd rust/core && cargo build --release
 	cd mobile && ./gradlew :linuxMobileApp:createDistributable
-	cp rust/core/target/release/lib*.so mobile/linuxMobileApp/build/compose/binaries/main/app/codeberg-mobile/lib/app/
+
+
 
 flatpak: linux ## Build Linux distributable and package into dist/CodebergMobile.flatpak
 	mkdir -p dist

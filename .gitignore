@@ -34,4 +34,4 @@ mobile/.kotlin
 [Bb]uild/
 
 # Un-ignore build.gradle.kts specifically, wherever it is located
-!**/build.gradle.kts
+!**/build.gradle.ktslocal.properties

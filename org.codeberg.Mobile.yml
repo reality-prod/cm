@@ -1,19 +1,15 @@
 app-id: org.codeberg.Mobile
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
-command: 
+command: codeberg-mobile
 
 finish-args:
-  # Wayland (Phosh, Plasma Mobile) + X11 fallback
   - --socket=wayland
   - --socket=fallback-x11
   - --share=ipc
-  # Hardware acceleration for Compose/Skiko rendering
   - --device=dri
-  # Codeberg API access
   - --share=network
-  # Freedesktop Secret Service / Flatpak Secret Portal for credential storage
   - --talk-name=org.freedesktop.secrets
 
 modules:
@@ -25,5 +21,4 @@ modules:
       - cp -r lib/* /app/lib/
     sources:
       - type: dir
-        path: mobile/linuxMobileApp/build/compose/binaries/main/app/<AppName>
-
+        path: mobile/linuxMobileApp/build/compose/binaries/main/app/codeberg-mobile
